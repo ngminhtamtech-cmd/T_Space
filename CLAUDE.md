@@ -1,41 +1,19 @@
 # T_Space
 
 Công cụ cá nhân: một cửa sổ desktop (Electron) gồm **file explorer kiểu VS Code bên trái** và
-**tối đa 6 pane terminal/PowerShell bên phải**, tất cả cùng trỏ vào **một git worktree chung**.
+**tối đa 6 pane terminal/PowerShell bên phải**, tất cả cùng trỏ vào **một thư mục workspace chung**.
 Mục đích: thao tác CLI dễ hơn, thay cho việc mở nhiều cửa sổ PowerShell rời rạc.
 
 ---
 
-## ⚠️ QUY TẮC WORKTREE (BẮT BUỘC — đọc trước mọi phiên làm việc)
+## Quy tắc làm việc với git
 
-1. **Mọi phiên làm việc phải diễn ra trong một git worktree cụ thể.** Không code trực tiếp ở
-   checkout gốc.
-2. **Nếu nhiệm vụ không nêu rõ dùng worktree mới hay worktree có sẵn nào → PHẢI HỎI người dùng
-   trước khi thao tác.** Không tự suy đoán. Không mặc định lấy worktree gần nhất hay worktree đang
-   đứng. Hỏi rồi chờ trả lời.
-3. **Không bao giờ commit trực tiếp lên `main` từ checkout gốc** `D:\03_Projects\T_Space`.
-   Checkout gốc chỉ dùng để quản lý worktree và đồng bộ với remote.
-4. Worktree mới đặt tại `D:\03_Projects\T_Space_worktrees\<tên-branch-đã-slug-hoá>`.
-   Ví dụ branch `feat/t-space-shell` → `D:\03_Projects\T_Space_worktrees\feat-t-space-shell`.
-5. **Đầu mỗi phiên: chạy `git worktree list` và nêu rõ đang đứng ở worktree/branch nào** trước khi
-   sửa bất cứ file nào.
-
-### Lệnh worktree thường dùng
-
-```powershell
-# Xem danh sách worktree hiện có
-git worktree list
-
-# Tạo worktree mới kèm branch mới
-git worktree add -b feat/<ten> D:\03_Projects\T_Space_worktrees\feat-<ten>
-
-# Tạo worktree từ branch đã có
-git worktree add D:\03_Projects\T_Space_worktrees\<slug> <branch-da-co>
-
-# Gỡ worktree khi xong việc (chạy từ checkout gốc)
-git worktree remove D:\03_Projects\T_Space_worktrees\<slug>
-git worktree prune
-```
+1. **Làm việc trực tiếp trong `D:\03_Projects\T_Space`.** Đây là checkout duy nhất. **Không tạo
+   git worktree phụ** và không tạo thư mục `T_Space_worktrees` — dự án đã bỏ cách làm đó.
+2. Việc nhỏ (sửa lỗi, chỉnh nhỏ) commit thẳng lên `main` cũng được. Tính năng lớn thì tạo branch
+   `feat/<ten>` ngay trong thư mục này rồi merge về `main` khi xong.
+3. **Đầu mỗi phiên: chạy `git status -sb` và nêu rõ đang đứng ở branch nào** trước khi sửa file.
+4. Remote qua HTTPS, không có `gh` CLI → dùng `git` thuần.
 
 ---
 
