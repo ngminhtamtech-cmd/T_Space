@@ -1,0 +1,23 @@
+appId: com.ngminhtamtech.tspace
+productName: T_Space
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**
+  - package.json
+  - '!**/*.map'
+asarUnpack:
+  # Binary .node không load được từ trong asar.
+  - '**/@lydell/node-pty*/**'
+win:
+  target:
+    - target: portable
+      arch: [x64]
+    - target: nsis
+      arch: [x64]
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+portable:
+  artifactName: T_Space-${version}-portable.exe

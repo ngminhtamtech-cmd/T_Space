@@ -101,7 +101,19 @@ npm install        # cài dependencies
 npm run dev        # chạy Electron ở chế độ dev (hot reload renderer)
 npm run build      # type-check + build 3 target (main/preload/renderer)
 npm run dist       # đóng gói .exe bằng electron-builder → release/
+
+node scripts/smoke-pty.mjs   # kiểm tra 6 PTY spawn song song được (không cần Electron)
 ```
+
+### Sự cố đã gặp
+
+- **`Error: Electron uninstall` khi chạy `npm run dev`** — postinstall của `electron` không tải
+  binary về. Sửa: `node node_modules\electron\install.js` rồi chạy lại.
+- **App không thoát hẳn khi đóng cửa sổ** — ConPTY đóng bất đồng bộ. `before-quit` phải
+  `preventDefault`, chờ `ptyManager.disposeAll()` rồi mới `app.exit(0)`. Đừng bỏ bước chờ này.
+- **Gỡ lỗi UI tự động**: `npm run dev -- --remote-debugging-port=9222` rồi điều khiển qua CDP
+  (`http://127.0.0.1:9222/json/list`). Cần thiết vì xterm render bằng WebGL nên không đọc được
+  nội dung terminal qua `innerText`.
 
 ---
 
