@@ -104,7 +104,11 @@ export function Launcher(): React.JSX.Element {
             <LayersIcon />
           </button>
           <span className="rail__spacer" />
-          <button className="rail__btn" title="Cấu hình nằm trong state.json" disabled>
+          <button
+            className="rail__btn"
+            title="Cấu hình"
+            onClick={() => useStore.getState().setModal('settings')}
+          >
             <GearIcon />
           </button>
         </nav>

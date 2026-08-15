@@ -118,6 +118,56 @@ export function TrashIcon({ size = 14 }: Props = {}): React.JSX.Element {
   )
 }
 
+/** Bốn mũi tên chĩa ra góc — phóng pane to chiếm cả lưới. */
+export function ExpandIcon({ size = 12 }: Props = {}): React.JSX.Element {
+  return (
+    <Svg size={size}>
+      <path d="M6.5 2.5h-4v4M9.5 2.5h4v4M9.5 13.5h4v-4M6.5 13.5h-4v-4" />
+    </Svg>
+  )
+}
+
+/** Bốn mũi tên chụm vào giữa — thu pane đang phóng to về lưới cũ. */
+export function CollapseIcon({ size = 12 }: Props = {}): React.JSX.Element {
+  return (
+    <Svg size={size}>
+      <path d="M2.5 6.5h4v-4M13.5 6.5h-4v-4M13.5 9.5h-4v4M2.5 9.5h4v4" />
+    </Svg>
+  )
+}
+
+/** Mũi tên bay — gửi text sang PTY của pane khác. */
+export function SendIcon({ size = 12 }: Props = {}): React.JSX.Element {
+  return (
+    <Svg size={size}>
+      <path d="M14 2 7 9M14 2l-4.5 12L7 9 2 6.5z" />
+    </Svg>
+  )
+}
+
+/** Bảng task board. */
+export function BoardIcon({ size = 16 }: Props = {}): React.JSX.Element {
+  return (
+    <Svg size={size}>
+      <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
+      <line x1="5.8" y1="2.5" x2="5.8" y2="13.5" />
+      <line x1="10.2" y1="2.5" x2="10.2" y2="13.5" />
+    </Svg>
+  )
+}
+
+/** Nhánh git tách ra — commit nhanh rồi tạo worktree. */
+export function BranchIcon({ size = 14 }: Props = {}): React.JSX.Element {
+  return (
+    <Svg size={size}>
+      <circle cx="4.5" cy="3.5" r="1.8" />
+      <circle cx="4.5" cy="12.5" r="1.8" />
+      <circle cx="11.5" cy="6.5" r="1.8" />
+      <path d="M4.5 5.3v5.4M4.5 8.5h3.6a3 3 0 0 0 3-2" />
+    </Svg>
+  )
+}
+
 /* ---------- Nút điều khiển cửa sổ (theo chuẩn Windows 11) ---------- */
 
 export function WinMinimizeIcon(): React.JSX.Element {

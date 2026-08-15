@@ -1,11 +1,28 @@
 import { ipcMain, dialog, type BrowserWindow } from 'electron'
 import { IPC } from '@shared/ipc'
-import type { PersistedState, SpawnOptions, WorkspaceInfo } from '@shared/types'
+import type { Board } from '@shared/board'
+import type {
+  CreateWorktreeOptions,
+  PersistedState,
+  SpawnOptions,
+  WorkspaceInfo
+} from '@shared/types'
 import { ptyManager } from '../pty/PtyManager'
 import { listShells } from '../pty/shells'
 import { fileService } from '../fs/FileService'
-import { findGitRoot, getStatus, listWorktrees } from '../git/GitService'
+import { boardService } from '../board/BoardService'
+import {
+  commitAll,
+  createWorktree,
+  findGitRoot,
+  getStatus,
+  listBranches,
+  listWorktrees,
+  removeWorktree,
+  suggestWorktreePath
+} from '../git/GitService'
 import { loadState, saveState } from '../state/Persist'
+import { transcriptStore } from '../transcript/TranscriptStore'
 
 /** Kênh invoke chỉ cho phép một handler; gỡ trước để đăng ký lại không throw. */
 function handle(channel: string, listener: Parameters<typeof ipcMain.handle>[1]): void {
@@ -21,6 +38,7 @@ function on(channel: string, listener: Parameters<typeof ipcMain.on>[1]): void {
 export function registerHandlers(window: BrowserWindow): void {
   ptyManager.attach(window.webContents)
   fileService.attach(window.webContents)
+  boardService.attach(window.webContents)
 
   handle(IPC.pty.listShells, () => listShells())
   handle(IPC.pty.spawn, (_e, options: SpawnOptions) => ptyManager.spawn(options))
@@ -52,6 +70,9 @@ export function registerHandlers(window: BrowserWindow): void {
   handle(IPC.workspace.open, async (_e, root: string): Promise<WorkspaceInfo> => {
     await fileService.setRoot(root)
     const resolvedRoot = fileService.getRoot()!
+    // Transcript và board đều bám theo workspace đang mở.
+    transcriptStore.setWorkspace(resolvedRoot)
+    await boardService.setRoot(resolvedRoot)
     return { root: resolvedRoot, gitRoot: await findGitRoot(resolvedRoot) }
   })
 
@@ -59,9 +80,33 @@ export function registerHandlers(window: BrowserWindow): void {
   handle(IPC.git.listWorktrees, (_e, gitRoot: string, currentRoot: string) =>
     listWorktrees(gitRoot, currentRoot)
   )
+  handle(IPC.git.listBranches, (_e, gitRoot: string) => listBranches(gitRoot))
+  handle(IPC.git.commitAll, (_e, gitRoot: string, message: string) => commitAll(gitRoot, message))
+  handle(IPC.git.createWorktree, (_e, gitRoot: string, options: CreateWorktreeOptions) =>
+    createWorktree(gitRoot, options)
+  )
+  handle(IPC.git.removeWorktree, (_e, gitRoot: string, path: string, force?: boolean) =>
+    removeWorktree(gitRoot, path, force)
+  )
+  handle(IPC.git.suggestWorktreePath, (_e, gitRoot: string, branch: string) =>
+    suggestWorktreePath(gitRoot, branch)
+  )
+
+  handle(IPC.board.ensure, (_e, root: string) => boardService.ensure(root))
+  handle(IPC.board.read, (_e, root: string) => boardService.read(root))
+  handle(IPC.board.write, (_e, root: string, board: Board) => boardService.write(root, board))
+
+  handle(IPC.transcript.read, (_e, paneId: string) => transcriptStore.read(paneId))
+  handle(IPC.transcript.clear, (_e, paneId: string) => transcriptStore.clear(paneId))
+  handle(IPC.transcript.clearWorkspace, () => transcriptStore.clearWorkspace())
 
   handle(IPC.state.load, () => loadState())
-  handle(IPC.state.save, (_e, state: PersistedState) => saveState(state))
+  handle(IPC.state.save, (_e, state: PersistedState) => {
+    // Settings đi cùng state nên main biết ngay khi người dùng tắt/bật lưu transcript.
+    const behavior = state.settings?.behavior
+    if (behavior) transcriptStore.setEnabled(behavior.saveTranscripts, behavior.transcriptMaxBytes)
+    return saveState(state)
+  })
 
   on(IPC.window.minimize, () => window.minimize())
   on(IPC.window.toggleMaximize, () => {
@@ -76,4 +121,29 @@ export function registerHandlers(window: BrowserWindow): void {
   }
   window.on('maximize', pushMaximized)
   window.on('unmaximize', pushMaximized)
+}
+
+const FLUSH_TIMEOUT_MS = 1000
+
+/**
+ * Renderer lưu state kiểu debounce 500 ms, nên thay đổi cuối cùng (ẩn sidebar, đổi
+ * settings) có thể chưa chạm đĩa lúc người dùng đóng cửa sổ. Bảo nó ghi ngay và chờ,
+ * nhưng không chờ quá lâu — thoát app vẫn quan trọng hơn.
+ */
+export function flushRendererState(window: BrowserWindow): Promise<void> {
+  if (window.isDestroyed() || window.webContents.isDestroyed()) return Promise.resolve()
+
+  return new Promise((resolve) => {
+    let settled = false
+    const done = (): void => {
+      if (settled) return
+      settled = true
+      ipcMain.removeListener(IPC.app.stateFlushed, done)
+      clearTimeout(timer)
+      resolve()
+    }
+    const timer = setTimeout(done, FLUSH_TIMEOUT_MS)
+    ipcMain.once(IPC.app.stateFlushed, done)
+    window.webContents.send(IPC.app.flushState)
+  })
 }

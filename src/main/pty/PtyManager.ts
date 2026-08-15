@@ -6,6 +6,7 @@ import type { IPty } from '@lydell/node-pty'
 import type { WebContents } from 'electron'
 import { IPC } from '@shared/ipc'
 import { MAX_PTY, type SpawnOptions } from '@shared/types'
+import { transcriptStore } from '../transcript/TranscriptStore'
 import { resolveShell } from './shells'
 
 /** Gom output rồi flush theo nhịp này. Gửi từng chunk sẽ nghẽn IPC khi lệnh in nhiều. */
@@ -22,6 +23,8 @@ const INITIAL_COMMAND_DELAY_MS = 250
 
 interface Session {
   id: string
+  /** Id pane phía renderer — transcript khoá theo id này, không theo id PTY. */
+  paneId: string
   proc: IPty
   buffer: string
   flushTimer: NodeJS.Timeout | null
@@ -58,12 +61,17 @@ export class PtyManager {
       cols: Math.max(options.cols, 2),
       rows: Math.max(options.rows, 1),
       cwd,
-      env: { ...process.env, TSPACE_PANE: id } as Record<string, string>,
+      env: {
+        ...process.env,
+        ...options.env,
+        TSPACE_PANE: options.paneId
+      } as Record<string, string>,
       useConpty: true
     })
 
     const session: Session = {
       id,
+      paneId: options.paneId,
       proc,
       buffer: '',
       flushTimer: null,
@@ -168,6 +176,8 @@ export class PtyManager {
     if (this.target && !this.target.isDestroyed()) {
       this.target.send(IPC.pty.data, { paneId: session.id, data })
     }
+    // Bám vào đúng nhịp gom sẵn có: ghi transcript theo lô 8 ms thay vì từng chunk.
+    transcriptStore.append(session.paneId, data)
   }
 
   private clearTimer(session: Session): void {

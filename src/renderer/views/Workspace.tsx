@@ -1,7 +1,8 @@
 import { Group, Panel, Separator, type PanelSize } from 'react-resizable-panels'
+import { SIDEBAR_MAX_PCT, SIDEBAR_MIN_PCT } from '@shared/types'
 import { useStore } from '@renderer/store'
 import { TabBar } from '@renderer/components/TabBar'
-import { FileTree } from '@renderer/components/Sidebar/FileTree'
+import { Sidebar } from '@renderer/components/Sidebar/Sidebar'
 import { EditorPane } from '@renderer/components/Editor/EditorPane'
 import { PaneStack } from '@renderer/components/Terminal/PaneStack'
 
@@ -11,7 +12,14 @@ export function Workspace(): React.JSX.Element {
   const setSidebarWidth = useStore((s) => s.setSidebarWidth)
   const openFile = useStore((s) => s.openFile)
 
-  const onSidebarResize = (size: PanelSize): void => setSidebarWidth(size.asPercentage)
+  // Panel sidebar bị gỡ hẳn khỏi Group khi ẩn, và trên đường ra nó còn bắn thêm một
+  // onResize với phần trăm vô nghĩa — nhận nó là mất bề rộng người dùng đã kéo.
+  // Cờ sidebarVisible đã là false từ trước lúc unmount nên đọc trực tiếp từ store là
+  // chặn được. Store còn chặn thêm một lớp theo biên min/max.
+  const onSidebarResize = (size: PanelSize): void => {
+    if (!useStore.getState().sidebarVisible) return
+    setSidebarWidth(size.asPercentage)
+  }
 
   return (
     <>
@@ -23,12 +31,12 @@ export function Workspace(): React.JSX.Element {
             <>
               <Panel
                 defaultSize={String(sidebarWidth)}
-                minSize="12"
-                maxSize="45"
+                minSize={String(SIDEBAR_MIN_PCT)}
+                maxSize={String(SIDEBAR_MAX_PCT)}
                 onResize={onSidebarResize}
                 className="sidebar"
               >
-                <FileTree />
+                <Sidebar />
               </Panel>
               <Separator className="resize-handle resize-handle--h" />
             </>

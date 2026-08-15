@@ -1,11 +1,16 @@
 import { create } from 'zustand'
 import { collectLeaves, removeLeaf, resizeSplit, splitLeaf } from '@shared/layout'
 import { BUILTIN_AGENTS, BUILTIN_PRESETS } from '@shared/presets'
+import type { Board } from '@shared/board'
 import {
+  DEFAULT_SETTINGS,
   DEFAULT_STATE,
   MAX_PANES_PER_TAB,
+  SIDEBAR_MAX_PCT,
+  SIDEBAR_MIN_PCT,
   STATE_VERSION,
   type AgentProfile,
+  type AppSettings,
   type GitStatusInfo,
   type LayoutPreset,
   type PaneNode,
@@ -28,6 +33,8 @@ export interface Pane {
   shell: ShellId
   cwd: string
   agentId: string | null
+  /** Định danh trên task board (a1, a2…), cũng là $env:TSPACE_AGENT_SLOT của PTY. */
+  slot: string
   exited: boolean
 }
 
@@ -38,6 +45,11 @@ export interface Tab {
   layout: PaneNode | null
   panes: Pane[]
   activePaneId: string | null
+  /**
+   * Pane đang phóng to chiếm cả lưới. Chỉ là trạng thái hiển thị nên không lưu vào
+   * state.json — mở lại app luôn về lưới đầy đủ.
+   */
+  maximizedPaneId: string | null
 }
 
 export interface OpenFile {
@@ -54,9 +66,13 @@ export type View = 'launcher' | 'workspace'
  */
 export type LayoutEditorMode = 'createTab' | 'pickPreset'
 
+/** Modal toàn màn hình khác LayoutEditor; chỉ một cái mở tại một thời điểm. */
+export type ModalKind = 'settings' | 'worktree'
+
 interface AppState {
   view: View
   layoutEditor: LayoutEditorMode | null
+  modal: ModalKind | null
   workspace: WorkspaceInfo | null
   gitStatus: GitStatusInfo | null
   shells: ShellProfile[]
@@ -77,12 +93,16 @@ interface AppState {
   sidebarVisible: boolean
   sidebarWidth: number
   sharedWorktree: boolean
+  settings: AppSettings
+  /** Bảng task đọc từ `.tspace/board.json` của workspace hiện tại; null nếu chưa có. */
+  board: Board | null
   openFile: OpenFile | null
   toast: string | null
   hydrated: boolean
 
   setView: (view: View) => void
   setLayoutEditor: (mode: LayoutEditorMode | null) => void
+  setModal: (modal: ModalKind | null) => void
   setWorkspace: (info: WorkspaceInfo | null) => void
   setGitStatus: (status: GitStatusInfo | null) => void
   setShells: (shells: ShellProfile[]) => void
@@ -102,6 +122,8 @@ interface AppState {
   removePane: (tabId: string, paneId: string) => void
   setActivePane: (paneId: string) => void
   resizeDivider: (tabId: string, splitId: string, index: number, deltaPct: number) => void
+  /** Phóng to pane chiếm cả lưới, gọi lại với chính pane đó để thu nhỏ. */
+  toggleMaximizePane: (tabId: string, paneId: string | null) => void
 
   setAgents: (agents: AgentProfile[]) => void
   setLayoutPresets: (presets: LayoutPreset[]) => void
@@ -112,6 +134,9 @@ interface AppState {
   toggleSidebar: () => void
   setSidebarWidth: (width: number) => void
   setSharedWorktree: (shared: boolean) => void
+  /** Ghi đè từng nhóm settings; nhóm không truyền thì giữ nguyên. */
+  setSettings: (patch: PartialSettings) => void
+  setBoard: (board: Board | null) => void
   setOpenFile: (file: OpenFile | null) => void
   updateOpenFile: (content: string) => void
   markFileSaved: () => void
@@ -124,9 +149,16 @@ interface AppState {
   toPersisted: () => PersistedState
 }
 
+export interface PartialSettings {
+  terminal?: Partial<AppSettings['terminal']>
+  ui?: Partial<AppSettings['ui']>
+  behavior?: Partial<AppSettings['behavior']>
+}
+
 export const useStore = create<AppState>((set, get) => ({
   view: 'launcher',
   layoutEditor: null,
+  modal: null,
   workspace: null,
   gitStatus: null,
   shells: [],
@@ -143,12 +175,15 @@ export const useStore = create<AppState>((set, get) => ({
   sidebarVisible: DEFAULT_STATE.sidebarVisible,
   sidebarWidth: DEFAULT_STATE.sidebarWidth,
   sharedWorktree: DEFAULT_STATE.sharedWorktree,
+  settings: DEFAULT_SETTINGS,
+  board: null,
   openFile: null,
   toast: null,
   hydrated: false,
 
   setView: (view) => set({ view }),
   setLayoutEditor: (layoutEditor) => set({ layoutEditor }),
+  setModal: (modal) => set({ modal }),
   setWorkspace: (workspace) => set({ workspace }),
   setGitStatus: (gitStatus) => set({ gitStatus }),
   setShells: (shells) => set({ shells }),
@@ -207,7 +242,10 @@ export const useStore = create<AppState>((set, get) => ({
           tab.activePaneId === paneId
             ? (collectLeaves(layout).at(-1) ?? null)
             : tab.activePaneId
-        return { ...tab, panes, layout, activePaneId }
+        // Đóng đúng pane đang phóng to thì phải trả lưới về bình thường, nếu không
+        // toàn bộ tab sẽ trắng vì trỏ tới một pane không còn tồn tại.
+        const maximizedPaneId = tab.maximizedPaneId === paneId ? null : tab.maximizedPaneId
+        return { ...tab, panes, layout, activePaneId, maximizedPaneId }
       })
     })),
 
@@ -227,6 +265,16 @@ export const useStore = create<AppState>((set, get) => ({
       )
     })),
 
+  toggleMaximizePane: (tabId, paneId) =>
+    set((s) => ({
+      tabs: s.tabs.map((tab) => {
+        if (tab.id !== tabId) return tab
+        const next = tab.maximizedPaneId === paneId ? null : paneId
+        // Phóng to cũng là một cách chọn pane — focus theo cho khỏi gõ nhầm chỗ.
+        return { ...tab, maximizedPaneId: next, activePaneId: next ?? tab.activePaneId }
+      })
+    })),
+
   setAgents: (agents) => set({ agents }),
   setLayoutPresets: (layoutPresets) => set({ layoutPresets }),
 
@@ -244,8 +292,27 @@ export const useStore = create<AppState>((set, get) => ({
   setSavedWorkspaces: (savedWorkspaces) => set({ savedWorkspaces }),
 
   toggleSidebar: () => set((s) => ({ sidebarVisible: !s.sidebarVisible })),
-  setSidebarWidth: (sidebarWidth) => set({ sidebarWidth }),
+
+  // react-resizable-panels bắn onResize thêm một lần lúc Panel sidebar bị gỡ khỏi
+  // Group, với phần trăm không còn ý nghĩa. Nhận giá trị đó là ghi đè mất bề rộng
+  // người dùng đã kéo — chặn thẳng mọi giá trị ngoài biên hợp lệ của Panel.
+  setSidebarWidth: (sidebarWidth) =>
+    set((s) =>
+      sidebarWidth >= SIDEBAR_MIN_PCT && sidebarWidth <= SIDEBAR_MAX_PCT ? { sidebarWidth } : s
+    ),
+
   setSharedWorktree: (sharedWorktree) => set({ sharedWorktree }),
+
+  setSettings: (patch) =>
+    set((s) => ({
+      settings: {
+        terminal: { ...s.settings.terminal, ...patch.terminal },
+        ui: { ...s.settings.ui, ...patch.ui },
+        behavior: { ...s.settings.behavior, ...patch.behavior }
+      }
+    })),
+
+  setBoard: (board) => set({ board }),
 
   setOpenFile: (openFile) => set({ openFile }),
   updateOpenFile: (content) =>
@@ -264,7 +331,8 @@ export const useStore = create<AppState>((set, get) => ({
       savedWorkspaces: state.savedWorkspaces,
       sidebarVisible: state.sidebarVisible,
       sidebarWidth: state.sidebarWidth,
-      sharedWorktree: state.sharedWorktree
+      sharedWorktree: state.sharedWorktree,
+      settings: state.settings
     }),
 
   finishHydration: () => set({ hydrated: true }),
@@ -285,7 +353,8 @@ export const useStore = create<AppState>((set, get) => ({
                 paneId: p.id,
                 shell: p.shell,
                 cwd: p.cwd,
-                agentId: p.agentId
+                agentId: p.agentId,
+                slot: p.slot
               }))
             }))
           : s.pendingTabs,
@@ -293,11 +362,12 @@ export const useStore = create<AppState>((set, get) => ({
         0,
         s.tabs.findIndex((t) => t.id === s.activeTabId)
       ),
-      layoutPresets: s.layoutPresets.filter((p) => !p.builtin),
-      agents: s.agents.filter((a) => !a.builtin),
+      layoutPresets: changedFrom(BUILTIN_PRESETS, s.layoutPresets),
+      agents: changedFrom(BUILTIN_AGENTS, s.agents),
       sidebarVisible: s.sidebarVisible,
       sidebarWidth: s.sidebarWidth,
-      sharedWorktree: s.sharedWorktree
+      sharedWorktree: s.sharedWorktree,
+      settings: s.settings
     }
   }
 }))
@@ -314,7 +384,14 @@ export function getActiveTab(): Tab | null {
 }
 
 export function newTab(name: string): Tab {
-  return { id: newId('tab-'), name, layout: null, panes: [], activePaneId: null }
+  return {
+    id: newId('tab-'),
+    name,
+    layout: null,
+    panes: [],
+    activePaneId: null,
+    maximizedPaneId: null
+  }
 }
 
 export function newPaneId(): string {
@@ -334,10 +411,29 @@ function insertLeaf(
   return splitLeaf(layout, collectLeaves(layout).at(-1)!, 'row', paneId)
 }
 
-/** Bản dựng sẵn luôn thắng để sửa lỗi/đổi tên áp được cho state đã lưu. */
+/**
+ * Bản người dùng thắng khi trùng id — Settings cho phép sửa cả agent/preset dựng sẵn.
+ * Thứ tự giữ theo danh sách builtin để giao diện không nhảy lung tung sau khi sửa.
+ */
 function mergeById<T extends { id: string }>(builtin: T[], custom: T[]): T[] {
-  const ids = new Set(builtin.map((item) => item.id))
-  return [...builtin, ...custom.filter((item) => !ids.has(item.id))]
+  const overrides = new Map(custom.map((item) => [item.id, item]))
+  const builtinIds = new Set(builtin.map((item) => item.id))
+  return [
+    ...builtin.map((item) => overrides.get(item.id) ?? item),
+    ...custom.filter((item) => !builtinIds.has(item.id))
+  ]
+}
+
+/**
+ * Những mục cần ghi xuống đĩa: mục do người dùng tạo, cộng thêm mục builtin đã bị
+ * sửa. Lọc theo cờ `builtin` như trước sẽ làm mất mọi tuỳ chỉnh trên agent dựng sẵn.
+ */
+function changedFrom<T extends { id: string; builtin: boolean }>(builtin: T[], current: T[]): T[] {
+  const originals = new Map(builtin.map((item) => [item.id, JSON.stringify(item)]))
+  return current.filter((item) => {
+    const original = originals.get(item.id)
+    return original === undefined || original !== JSON.stringify(item)
+  })
 }
 
 function samePath(a: string, b: string): boolean {

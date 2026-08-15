@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { newTab, useStore } from '@renderer/store'
+import { askConfirm } from '@renderer/components/Prompt/promptStore'
 import { usePaneActions } from './usePaneActions'
 
 export function useTabActions() {
@@ -24,11 +25,20 @@ export function useTabActions() {
   /** Đóng tab: giết hết PTY của nó trước, nếu không sẽ để lại tiến trình mồ côi. */
   const closeTabWithPanes = useCallback(
     async (tabId: string): Promise<void> => {
-      const tab = useStore.getState().tabs.find((t) => t.id === tabId)
+      const state = useStore.getState()
+      const tab = state.tabs.find((t) => t.id === tabId)
       if (!tab) return
+
+      const live = tab.panes.filter((p) => !p.exited)
+      if (state.settings.behavior.confirmClosePane && live.length > 0) {
+        if (!(await askConfirm(`Đóng tab "${tab.name}" và ${live.length} pane?`, 'Đóng'))) return
+      }
+
       await Promise.all(
         tab.panes.filter((p) => p.ptyId).map((p) => window.tspace.pty.kill(p.ptyId!))
       )
+      // Tab đã đóng thì transcript của nó không còn được khôi phục nữa.
+      await Promise.all(tab.panes.map((p) => window.tspace.transcript.clear(p.id)))
       closeTab(tabId)
     },
     [closeTab]

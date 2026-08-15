@@ -1,8 +1,10 @@
 import { join } from 'node:path'
 import { app, BrowserWindow, shell } from 'electron'
-import { registerHandlers } from './ipc/handlers'
+import { flushRendererState, registerHandlers } from './ipc/handlers'
 import { ptyManager } from './pty/PtyManager'
 import { fileService } from './fs/FileService'
+import { boardService } from './board/BoardService'
+import { transcriptStore } from './transcript/TranscriptStore'
 
 function createWindow(): BrowserWindow {
   const window = new BrowserWindow({
@@ -65,7 +67,18 @@ app.on('before-quit', (event) => {
   quitting = true
   event.preventDefault()
 
-  void Promise.all([ptyManager.disposeAll(), fileService.dispose()]).finally(() => app.exit(0))
+  // Bắt renderer ghi nốt state trước khi gỡ mọi thứ — làm sau khi PTY đã chết thì
+  // cửa sổ có thể đã đóng và không còn ai trả lời.
+  const window = BrowserWindow.getAllWindows()[0]
+  const flushed = window ? flushRendererState(window) : Promise.resolve()
+
+  void flushed
+    .then(() =>
+      Promise.all([ptyManager.disposeAll(), fileService.dispose(), boardService.dispose()])
+    )
+    // Transcript dispose sau cùng: PTY thoát còn kịp đẩy nốt output cuối vào đệm.
+    .then(() => transcriptStore.dispose())
+    .finally(() => app.exit(0))
 })
 
 app.on('window-all-closed', () => {

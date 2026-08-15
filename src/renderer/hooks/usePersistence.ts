@@ -36,7 +36,8 @@ export function usePersistence(): void {
           name: persisted.name,
           layout: persisted.layout,
           panes: [],
-          activePaneId: null
+          activePaneId: null,
+          maximizedPaneId: null
         }
         useStore.getState().addTab(tab)
 
@@ -62,21 +63,38 @@ export function usePersistence(): void {
     let timer: number | undefined
     let previous = useStore.getState().toPersisted()
 
+    const persist = async (): Promise<void> => {
+      const next = useStore.getState().toPersisted()
+      // Kéo divider bắn hàng chục lần/giây và toast cũng làm store đổi — chỉ ghi
+      // đĩa khi phần thực sự được lưu có thay đổi.
+      const serialized = JSON.stringify(next)
+      if (serialized === JSON.stringify(previous)) return
+      previous = next
+      await window.tspace.state.save(next)
+    }
+
     const unsubscribe = useStore.subscribe(() => {
       window.clearTimeout(timer)
-      timer = window.setTimeout(() => {
-        const next = useStore.getState().toPersisted()
-        // Kéo divider bắn hàng chục lần/giây và toast cũng làm store đổi — chỉ ghi
-        // đĩa khi phần thực sự được lưu có thay đổi.
-        const serialized = JSON.stringify(next)
-        if (serialized === JSON.stringify(previous)) return
-        previous = next
-        void window.tspace.state.save(next)
-      }, SAVE_DEBOUNCE_MS)
+      timer = window.setTimeout(() => void persist(), SAVE_DEBOUNCE_MS)
     })
+
+    // Debounce 500 ms nghĩa là thay đổi cuối (ẩn sidebar, đổi settings) chưa kịp
+    // chạm đĩa lúc người dùng đóng cửa sổ. Main chờ tín hiệu này trước khi thoát.
+    const offFlush = window.tspace.app.onFlushState(() => {
+      window.clearTimeout(timer)
+      void persist().finally(() => window.tspace.app.stateFlushed())
+    })
+
+    const onPageHide = (): void => {
+      window.clearTimeout(timer)
+      void persist()
+    }
+    window.addEventListener('pagehide', onPageHide)
 
     return () => {
       window.clearTimeout(timer)
+      window.removeEventListener('pagehide', onPageHide)
+      offFlush()
       unsubscribe()
     }
   }, [hydrated])

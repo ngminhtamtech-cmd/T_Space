@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { SavedWorkspace } from '@shared/types'
 import { useStore } from '@renderer/store'
 import { useWorkspaceActions } from '@renderer/hooks/useWorkspaceActions'
+import { formatFullDate, formatLastOpened } from '@renderer/utils/time'
 import { FolderIcon, LayersIcon, PlusIcon, TrashIcon } from '@renderer/components/icons'
 
 type Mode = 'folder' | 'workspace'
@@ -25,7 +26,15 @@ export function WorkspaceList({
   const saved = useStore((s) => s.savedWorkspaces)
   const setSavedWorkspaces = useStore((s) => s.setSavedWorkspaces)
   const removeRecentWorkspace = useStore((s) => s.removeRecentWorkspace)
+  const presets = useStore((s) => s.layoutPresets)
+  const agents = useStore((s) => s.agents)
   const { pickWorkspace } = useWorkspaceActions()
+
+  // addRecentWorkspace prepend nên thường đã đúng thứ tự, nhưng state cũ có thể lệch.
+  const sortedRecents = useMemo(
+    () => [...recents].sort((a, b) => b.lastOpenedAt - a.lastOpenedAt),
+    [recents]
+  )
 
   const pick = async (): Promise<void> => {
     const picked = await pickWorkspace()
@@ -65,7 +74,7 @@ export function WorkspaceList({
               Bấm “Duyệt thư mục” bên dưới.
             </p>
           ) : (
-            recents.map((item) => (
+            sortedRecents.map((item) => (
               <div
                 key={item.path}
                 className={`ws-item ${selectedPath === item.path ? 'ws-item--on' : ''}`}
@@ -79,6 +88,9 @@ export function WorkspaceList({
                   <span className="ws-item__name">{item.name}</span>
                   <span className="ws-item__path" title={item.path}>
                     {item.path}
+                  </span>
+                  <span className="ws-item__meta" title={formatFullDate(item.lastOpenedAt)}>
+                    {formatLastOpened(item.lastOpenedAt)}
                   </span>
                 </span>
                 <button
@@ -117,6 +129,10 @@ export function WorkspaceList({
                   <span className="ws-item__name">{item.name}</span>
                   <span className="ws-item__path" title={item.path}>
                     {item.path}
+                  </span>
+                  <span className="ws-item__meta">
+                    {presets.find((p) => p.id === item.presetId)?.name ?? 'layout mặc định'} ·{' '}
+                    {agents.find((a) => a.id === item.agentId)?.label ?? 'Shell'}
                   </span>
                 </span>
                 <button

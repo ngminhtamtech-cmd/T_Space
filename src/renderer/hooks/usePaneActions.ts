@@ -9,6 +9,7 @@ import {
   type SplitDirection
 } from '@shared/types'
 import { getActiveTab, newPaneId, newTab, useStore, type Pane, type Tab } from '@renderer/store'
+import { askConfirm } from '@renderer/components/Prompt/promptStore'
 
 /** Kích thước tạm lúc spawn; ResizeObserver của pane sẽ resize lại ngay sau khi mount. */
 const INITIAL_COLS = 80
@@ -20,6 +21,16 @@ export interface NewPaneOptions {
   agentId?: string
   /** Chia pane này thay vì nối vào cuối. */
   splitFrom?: { paneId: string; direction: SplitDirection }
+}
+
+export interface CreateTabOptions {
+  /** cwd theo paneId của preset; thiếu thì dùng fallbackCwd. */
+  cwds?: Record<string, string>
+  /** Agent chung cho cả tab. */
+  agentId?: string
+  /** Agent riêng theo từng paneId của preset — thắng agentId khi có. */
+  agentIds?: Record<string, string>
+  fallbackCwd?: string
 }
 
 export function usePaneActions() {
@@ -56,7 +67,8 @@ export function usePaneActions() {
       }
 
       const agent = resolveAgent(state.agents, options.agentId ?? currentAgentId(tab))
-      const pane = await spawnPane(cwd, agent)
+      const slot = nextSlot(tab.panes.map((p) => p.slot))
+      const pane = await spawnPane(cwd, agent, newPaneId(), slot)
       if (!pane) {
         return null
       }
@@ -86,11 +98,22 @@ export function usePaneActions() {
   )
 
   const closePane = useCallback(
-    (tabId: string, paneId: string): void => {
-      const tab = useStore.getState().tabs.find((t) => t.id === tabId)
+    async (tabId: string, paneId: string): Promise<void> => {
+      const state = useStore.getState()
+      const tab = state.tabs.find((t) => t.id === tabId)
       const pane = tab?.panes.find((p) => p.id === paneId)
       if (!pane) return
+
+      // Pane đã thoát thì không còn gì để mất, đừng hỏi thừa.
+      if (state.settings.behavior.confirmClosePane && !pane.exited) {
+        const agent = state.agents.find((a) => a.id === pane.agentId)
+        const what = agent?.command ? agent.label : 'terminal'
+        if (!(await askConfirm(`Đóng pane ${pane.slot} (${what})?`, 'Đóng'))) return
+      }
+
       if (pane.ptyId) void window.tspace.pty.kill(pane.ptyId)
+      // Pane đã đóng hẳn thì transcript của nó là rác — pane khôi phục lại mới cần giữ.
+      void window.tspace.transcript.clear(paneId)
       removePane(tabId, paneId)
     },
     [removePane]
@@ -98,7 +121,7 @@ export function usePaneActions() {
 
   const closeActivePane = useCallback((): void => {
     const tab = getActiveTab()
-    if (tab?.activePaneId) closePane(tab.id, tab.activePaneId)
+    if (tab?.activePaneId) void closePane(tab.id, tab.activePaneId)
   }, [closePane])
 
   /**
@@ -109,7 +132,7 @@ export function usePaneActions() {
     async (
       name: string,
       layout: PaneNode,
-      options: { cwds?: Record<string, string>; agentId?: string; fallbackCwd?: string } = {}
+      options: CreateTabOptions = {}
     ): Promise<string | null> => {
       const state = useStore.getState()
       const fallback = options.fallbackCwd ?? state.workspace?.root
@@ -118,13 +141,13 @@ export function usePaneActions() {
         return null
       }
 
-      const agent = resolveAgent(state.agents, options.agentId)
-
-      // Đổi paneId sang id thật, đồng thời nhớ cwd gắn với từng leaf của preset.
+      // Đổi paneId sang id thật, đồng thời nhớ cwd và agent gắn với từng leaf của preset.
       const cwdByNewId: Record<string, string> = {}
+      const agentByNewId: Record<string, string | undefined> = {}
       const instantiated = cloneLayout(layout, (oldId) => {
         const id = newPaneId()
         cwdByNewId[id] = options.cwds?.[oldId] ?? fallback
+        agentByNewId[id] = options.agentIds?.[oldId] ?? options.agentId
         return id
       })
 
@@ -134,7 +157,9 @@ export function usePaneActions() {
       const wanted = collectLeaves(instantiated)
       const spawned: Pane[] = []
       for (const paneId of wanted) {
-        const pane = await spawnPane(cwdByNewId[paneId] ?? fallback, agent, paneId)
+        const agent = resolveAgent(state.agents, agentByNewId[paneId])
+        const slot = nextSlot(spawned.map((p) => p.slot))
+        const pane = await spawnPane(cwdByNewId[paneId] ?? fallback, agent, paneId, slot)
         if (pane) spawned.push(pane)
       }
 
@@ -174,7 +199,9 @@ export function usePaneActions() {
       // Tuần tự: giới hạn PTY ở main đọc số session hiện tại, song song sẽ đọc sai.
       for (const item of persisted.slice(0, MAX_PANES_PER_TAB)) {
         const agent = resolveAgent(agents, item.agentId ?? undefined)
-        const pane = await spawnPane(item.cwd, { ...agent, shell: item.shell }, item.paneId)
+        // Slot đã lưu thì giữ nguyên — task trên board đang trỏ tới đúng tên đó.
+        const slot = item.slot ?? nextSlot(panes.map((p) => p.slot))
+        const pane = await spawnPane(item.cwd, { ...agent, shell: item.shell }, item.paneId, slot)
         if (pane) panes.push(pane)
       }
 
@@ -214,20 +241,46 @@ export function usePaneActions() {
 async function spawnPane(
   cwd: string,
   agent: AgentProfile,
-  paneId = newPaneId()
+  paneId = newPaneId(),
+  slot = 'a1'
 ): Promise<Pane | null> {
   try {
     const ptyId = await window.tspace.pty.spawn({
+      paneId,
       shell: agent.shell,
       cwd,
       cols: INITIAL_COLS,
       rows: INITIAL_ROWS,
-      initialCommand: agent.command || undefined
+      initialCommand: agent.command || undefined,
+      env: { ...agent.env, ...boardEnv(cwd, slot) }
     })
-    return { id: paneId, ptyId, shell: agent.shell, cwd, agentId: agent.id, exited: false }
+    return { id: paneId, ptyId, shell: agent.shell, cwd, agentId: agent.id, slot, exited: false }
   } catch (err) {
     useStore.getState().setToast(toMessage(err))
     return null
+  }
+}
+
+/**
+ * Biến môi trường để agent tự tìm được task board dùng chung mà không cần ai nhắc.
+ * `.tspace/AGENTS.md` mô tả đúng ba biến này.
+ */
+function boardEnv(cwd: string, slot: string): Record<string, string> {
+  const sep = cwd.includes('/') && !cwd.includes('\\') ? '/' : '\\'
+  const root = cwd.replace(/[\\/]+$/, '')
+  return {
+    TSPACE_AGENT_SLOT: slot,
+    TSPACE_WORKTREE: root,
+    TSPACE_BOARD: `${root}${sep}.tspace${sep}board.json`
+  }
+}
+
+/** Slot nhỏ nhất chưa ai dùng trong tab — đóng pane giữa chừng không tạo lỗ hổng tên. */
+function nextSlot(taken: Iterable<string>): string {
+  const used = new Set(taken)
+  for (let i = 1; ; i += 1) {
+    const slot = `a${i}`
+    if (!used.has(slot)) return slot
   }
 }
 

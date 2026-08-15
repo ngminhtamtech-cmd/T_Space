@@ -1,6 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '@shared/ipc'
+import type { Board } from '@shared/board'
 import type {
+  BranchListInfo,
+  CommitResult,
+  CreateWorktreeOptions,
   DirEntry,
   FileReadResult,
   FsChangeEvent,
@@ -56,11 +60,39 @@ const api = {
   git: {
     status: (gitRoot: string): Promise<GitStatusInfo> => ipcRenderer.invoke(IPC.git.status, gitRoot),
     listWorktrees: (gitRoot: string, currentRoot: string): Promise<WorktreeInfo[]> =>
-      ipcRenderer.invoke(IPC.git.listWorktrees, gitRoot, currentRoot)
+      ipcRenderer.invoke(IPC.git.listWorktrees, gitRoot, currentRoot),
+    listBranches: (gitRoot: string): Promise<BranchListInfo> =>
+      ipcRenderer.invoke(IPC.git.listBranches, gitRoot),
+    commitAll: (gitRoot: string, message: string): Promise<CommitResult> =>
+      ipcRenderer.invoke(IPC.git.commitAll, gitRoot, message),
+    createWorktree: (gitRoot: string, options: CreateWorktreeOptions): Promise<WorktreeInfo> =>
+      ipcRenderer.invoke(IPC.git.createWorktree, gitRoot, options),
+    removeWorktree: (gitRoot: string, path: string, force?: boolean): Promise<void> =>
+      ipcRenderer.invoke(IPC.git.removeWorktree, gitRoot, path, force),
+    suggestWorktreePath: (gitRoot: string, branch: string): Promise<string> =>
+      ipcRenderer.invoke(IPC.git.suggestWorktreePath, gitRoot, branch)
+  },
+  board: {
+    ensure: (root: string): Promise<Board> => ipcRenderer.invoke(IPC.board.ensure, root),
+    read: (root: string): Promise<Board | null> => ipcRenderer.invoke(IPC.board.read, root),
+    write: (root: string, board: Board): Promise<void> =>
+      ipcRenderer.invoke(IPC.board.write, root, board),
+    onChanged: (handler: (board: Board | null) => void): (() => void) =>
+      subscribe<Board | null>(IPC.board.changed, handler)
+  },
+  transcript: {
+    read: (paneId: string): Promise<string> => ipcRenderer.invoke(IPC.transcript.read, paneId),
+    clear: (paneId: string): Promise<void> => ipcRenderer.invoke(IPC.transcript.clear, paneId),
+    clearWorkspace: (): Promise<void> => ipcRenderer.invoke(IPC.transcript.clearWorkspace)
   },
   state: {
     load: (): Promise<PersistedState> => ipcRenderer.invoke(IPC.state.load),
     save: (state: PersistedState): Promise<void> => ipcRenderer.invoke(IPC.state.save, state)
+  },
+  app: {
+    onFlushState: (handler: () => void): (() => void) =>
+      subscribe<void>(IPC.app.flushState, handler),
+    stateFlushed: (): void => ipcRenderer.send(IPC.app.stateFlushed)
   },
   window: {
     minimize: (): void => ipcRenderer.send(IPC.window.minimize),

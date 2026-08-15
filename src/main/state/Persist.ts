@@ -1,10 +1,12 @@
-import { readFile, writeFile } from 'node:fs/promises'
+import { readFile, rename, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { app } from 'electron'
 import { rowLayout } from '@shared/layout'
 import {
+  DEFAULT_SETTINGS,
   DEFAULT_STATE,
   STATE_VERSION,
+  type AppSettings,
   type LegacyPersistedState,
   type PersistedPane,
   type PersistedState
@@ -25,8 +27,12 @@ export async function loadState(): Promise<PersistedState> {
 }
 
 export async function saveState(state: PersistedState): Promise<void> {
+  // Ghi tmp rồi rename: crash giữa chừng chỉ hỏng file tmp, state.json cũ vẫn nguyên.
+  const target = statePath()
+  const tmp = `${target}.tmp`
   try {
-    await writeFile(statePath(), JSON.stringify(state, null, 2), 'utf8')
+    await writeFile(tmp, JSON.stringify(state, null, 2), 'utf8')
+    await rename(tmp, target)
   } catch {
     // Không chặn app chỉ vì không ghi được state.
   }
@@ -34,12 +40,22 @@ export async function saveState(state: PersistedState): Promise<void> {
 
 /**
  * v1 lưu một danh sách pane phẳng + tên layout preset. v2 lưu nhiều tab, mỗi tab
- * một cây layout. Dựng lại thành đúng một tab xếp hàng ngang.
+ * một cây layout. v3 thêm khối `settings`.
+ *
+ * Spread `{ ...DEFAULT_STATE, ...parsed }` ở loadState chỉ vá được khoá cấp một, nên
+ * `settings` luôn phải merge sâu — state cũ có thể thiếu cả nhóm con.
  */
 function migrate(state: PersistedState & LegacyPersistedState): PersistedState {
-  if (state.version === STATE_VERSION) return stripLegacy(state)
+  const withSettings = { ...state, settings: mergeSettings(state.settings) }
 
-  const legacyPanes = Array.isArray(state.panes) ? state.panes : []
+  if (withSettings.version === STATE_VERSION) return stripLegacy(withSettings)
+
+  // v2 đã đúng cấu trúc tab, chỉ thiếu settings.
+  if (withSettings.version === 2) {
+    return stripLegacy({ ...withSettings, version: STATE_VERSION })
+  }
+
+  const legacyPanes = Array.isArray(withSettings.panes) ? withSettings.panes : []
   const panes: PersistedPane[] = legacyPanes.map((pane, i) => ({
     paneId: `p${i + 1}`,
     shell: pane.shell,
@@ -48,18 +64,18 @@ function migrate(state: PersistedState & LegacyPersistedState): PersistedState {
   }))
 
   return stripLegacy({
-    ...state,
+    ...withSettings,
     version: STATE_VERSION,
     tabs:
       panes.length > 0
         ? [{ name: 'main', layout: rowLayout(panes.map((p) => p.paneId)), panes }]
         : [],
     activeTabIndex: 0,
-    recentWorkspaces: state.workspaceRoot
+    recentWorkspaces: withSettings.workspaceRoot
       ? [
           {
-            path: state.workspaceRoot,
-            name: basename(state.workspaceRoot),
+            path: withSettings.workspaceRoot,
+            name: basename(withSettings.workspaceRoot),
             lastOpenedAt: Date.now()
           }
         ]
@@ -68,6 +84,14 @@ function migrate(state: PersistedState & LegacyPersistedState): PersistedState {
     layoutPresets: [],
     agents: []
   })
+}
+
+function mergeSettings(partial: Partial<AppSettings> | undefined): AppSettings {
+  return {
+    terminal: { ...DEFAULT_SETTINGS.terminal, ...partial?.terminal },
+    ui: { ...DEFAULT_SETTINGS.ui, ...partial?.ui },
+    behavior: { ...DEFAULT_SETTINGS.behavior, ...partial?.behavior }
+  }
 }
 
 function stripLegacy(state: PersistedState & LegacyPersistedState): PersistedState {

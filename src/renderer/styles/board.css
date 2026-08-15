@@ -1,0 +1,182 @@
+/* Task board dùng chung trong sidebar — nguồn dữ liệu là .tspace/board.json. */
+
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0 var(--space-2) var(--space-3);
+}
+
+.board__empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-4);
+  color: var(--fg-muted);
+  font-size: var(--fs-sm);
+}
+
+.board__head {
+  display: flex;
+  gap: var(--space-2);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg-surface);
+  padding: var(--space-1) 0;
+}
+
+.board__agents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.board__agent {
+  font-size: var(--fs-xs);
+  font-family: var(--font-mono);
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 3px;
+  padding: 1px 6px;
+}
+
+.board__agent--off {
+  color: var(--fg-dim);
+  background: var(--bg-raised);
+}
+
+.board__cols {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.board__col-title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.board__count {
+  background: var(--bg-active);
+  border-radius: 3px;
+  padding: 0 5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Thẻ task */
+
+.task {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  margin-bottom: var(--space-2);
+  font-size: var(--fs-sm);
+}
+
+.task__top {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.task__id {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--fg-dim);
+  flex-shrink: 0;
+}
+
+.task__title {
+  flex: 1;
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+.task__detail {
+  margin: 0;
+  color: var(--fg-muted);
+  font-size: var(--fs-xs);
+}
+
+.task__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.task__chip {
+  font-size: var(--fs-xs);
+  color: var(--fg-muted);
+  background: var(--bg-active);
+  border-radius: 3px;
+  padding: 0 5px;
+}
+
+.task__chip--review {
+  color: var(--warn);
+}
+
+.task__btn {
+  background: none;
+  border: none;
+  color: var(--fg-dim);
+  cursor: pointer;
+  padding: 0 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: inherit;
+  font-size: var(--fs-xs);
+}
+
+.task__btn:hover {
+  color: var(--fg);
+}
+
+.task__btn--text {
+  margin-left: auto;
+}
+
+.task__assign {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.task__notes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-1);
+}
+
+.task__note {
+  font-size: var(--fs-xs);
+  color: var(--fg-muted);
+}
+
+.task__note--pass {
+  color: var(--ok);
+}
+
+.task__note--fail {
+  color: var(--danger);
+}

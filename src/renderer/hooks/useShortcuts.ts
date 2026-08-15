@@ -15,9 +15,34 @@ export function useShortcuts(): void {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent): void => {
-      if (!e.ctrlKey || e.altKey) return
       // Launcher không có pane/tab nào để thao tác.
       if (useStore.getState().view !== 'workspace') return
+
+      // Escape — thu pane đang phóng to về lưới. Không đòi Ctrl nên xét trước.
+      // Nhường Escape cho modal đang mở và cho ô nhập (xterm dùng textarea nên
+      // chỉ loại trừ input/select, không loại trừ textarea).
+      if (e.key === 'Escape' && !e.ctrlKey && !e.altKey) {
+        const s = useStore.getState()
+        if (s.modal || s.layoutEditor) return
+        const tag = (e.target as HTMLElement | null)?.tagName
+        if (tag === 'INPUT' || tag === 'SELECT') return
+        const tab = getActiveTab()
+        if (!tab?.maximizedPaneId) return
+        e.preventDefault()
+        s.toggleMaximizePane(tab.id, tab.maximizedPaneId)
+        return
+      }
+
+      if (!e.ctrlKey || e.altKey) return
+
+      // Ctrl+Shift+Z — phóng to / thu nhỏ pane đang focus
+      if (e.shiftKey && e.code === 'KeyZ') {
+        const tab = getActiveTab()
+        if (!tab?.activePaneId) return
+        e.preventDefault()
+        useStore.getState().toggleMaximizePane(tab.id, tab.maximizedPaneId ?? tab.activePaneId)
+        return
+      }
 
       // Ctrl+\ — split right; Ctrl+Shift+\ — split down
       if (e.code === 'Backslash') {

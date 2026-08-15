@@ -28,11 +28,34 @@ export const IPC = {
   },
   git: {
     status: 'git:status',
-    listWorktrees: 'git:listWorktrees'
+    listWorktrees: 'git:listWorktrees',
+    listBranches: 'git:listBranches',
+    commitAll: 'git:commitAll',
+    createWorktree: 'git:createWorktree',
+    removeWorktree: 'git:removeWorktree',
+    suggestWorktreePath: 'git:suggestWorktreePath'
+  },
+  board: {
+    ensure: 'board:ensure',
+    read: 'board:read',
+    write: 'board:write',
+    /** main → renderer */
+    changed: 'board:changed'
+  },
+  transcript: {
+    read: 'transcript:read',
+    clear: 'transcript:clear',
+    clearWorkspace: 'transcript:clearWorkspace'
   },
   state: {
     load: 'state:load',
     save: 'state:save'
+  },
+  app: {
+    /** main → renderer: ghi state ngay, đừng chờ hết debounce vì app sắp thoát. */
+    flushState: 'app:flushState',
+    /** renderer → main: đã ghi xong. */
+    stateFlushed: 'app:stateFlushed'
   },
   window: {
     minimize: 'window:minimize',

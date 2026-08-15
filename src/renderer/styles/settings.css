@@ -1,0 +1,211 @@
+/* Modal cấu hình: cột điều hướng bên trái, nội dung bên phải. */
+
+.settings-modal {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  grid-template-rows: 1fr auto;
+  width: min(760px, 90vw);
+  height: min(560px, 85vh);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+  overflow: hidden;
+}
+
+.settings__nav {
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3) var(--space-2);
+  background: var(--bg-base);
+  border-right: 1px solid var(--border);
+}
+
+.settings__title {
+  margin: 0 0 var(--space-3) var(--space-2);
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+
+.settings__nav-item {
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 6px var(--space-2);
+  color: var(--fg-muted);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.settings__nav-item:hover {
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+
+.settings__nav-item--on {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.settings__body {
+  overflow: auto;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.settings__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border);
+  background: var(--bg-base);
+}
+
+/* Trường nhập dùng chung với modal worktree */
+
+.settings__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.settings__label {
+  font-size: var(--fs-sm);
+  color: var(--fg);
+}
+
+.settings__hint {
+  display: block;
+  font-size: var(--fs-xs);
+  color: var(--fg-dim);
+}
+
+.settings__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.settings__check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.settings__check input {
+  margin-top: 3px;
+}
+
+.settings__note {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--fg-dim);
+  border-left: 2px solid var(--border-strong);
+  padding-left: var(--space-2);
+}
+
+/* Chọn màu nhấn */
+
+.settings__swatches {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.swatch--on {
+  border-color: var(--fg);
+}
+
+.swatch--pick {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+}
+
+/* Bảng agent */
+
+.agents {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: stretch;
+}
+
+.agent-row {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.agent-row--open {
+  border-color: var(--accent-ring);
+}
+
+.agent-row__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  width: 100%;
+  background: var(--bg-raised);
+  border: none;
+  padding: var(--space-2) var(--space-3);
+  color: var(--fg);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  text-align: left;
+}
+
+.agent-row__head:hover {
+  background: var(--bg-hover);
+}
+
+.agent-row__label {
+  font-weight: 500;
+}
+
+.agent-row__cmd {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--fg-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-row__tag {
+  font-size: var(--fs-xs);
+  color: var(--fg-dim);
+  flex-shrink: 0;
+}
+
+.agent-row__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.agent-row__actions {
+  display: flex;
+  justify-content: flex-end;
+}

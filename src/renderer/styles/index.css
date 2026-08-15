@@ -4,5 +4,8 @@
 @import './titlebar.css';
 @import './launcher.css';
 @import './workspace.css';
+@import './board.css';
 @import './layout-editor.css';
+@import './settings.css';
+@import './worktree.css';
 @import './overlays.css';

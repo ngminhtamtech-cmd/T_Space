@@ -4,6 +4,7 @@ import { usePaneActions } from '@renderer/hooks/usePaneActions'
 import { useTabActions } from '@renderer/hooks/useTabActions'
 import {
   CloseIcon,
+  GearIcon,
   HomeIcon,
   PlusIcon,
   SidebarIcon,
@@ -18,6 +19,7 @@ export function TabBar(): React.JSX.Element {
   const toggleSidebar = useStore((s) => s.toggleSidebar)
   const setActiveTab = useStore((s) => s.setActiveTab)
   const setView = useStore((s) => s.setView)
+  const setModal = useStore((s) => s.setModal)
 
   const tab = useActiveTab()
   const { splitActivePane } = usePaneActions()
@@ -90,6 +92,9 @@ export function TabBar(): React.JSX.Element {
 
         <button className="icon-btn" onClick={openLayoutEditor} title="Layout editor">
           <span aria-hidden="true">⌗</span>
+        </button>
+        <button className="icon-btn" onClick={() => setModal('settings')} title="Cấu hình">
+          <GearIcon />
         </button>
         <button
           className="icon-btn"

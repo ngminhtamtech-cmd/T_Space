@@ -75,6 +75,7 @@ export const DEFAULT_PRESET_ID = 'single'
 
 export const BUILTIN_AGENTS: AgentProfile[] = [
   { id: 'shell', label: 'Shell', shell: 'powershell', command: '', builtin: true },
+  { id: 'opencode', label: 'Opencode', shell: 'powershell', command: 'opencode', builtin: true },
   { id: 'claude', label: 'Claude Code', shell: 'powershell', command: 'claude', builtin: true },
   { id: 'codex', label: 'Codex', shell: 'powershell', command: 'codex', builtin: true },
   { id: 'gemini', label: 'Gemini', shell: 'powershell', command: 'gemini', builtin: true }

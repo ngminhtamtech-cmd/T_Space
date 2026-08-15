@@ -13,12 +13,16 @@ export interface ShellProfile {
 }
 
 export interface SpawnOptions {
+  /** Id pane phía renderer. Transcript khoá theo id này nên nó sống qua các lần khôi phục. */
+  paneId: string
   shell: ShellId
   cwd: string
   cols: number
   rows: number
   /** Lệnh gõ vào PTY ngay sau khi spawn. Rỗng/thiếu = shell trần. */
   initialCommand?: string
+  /** Biến môi trường thêm vào cho tiến trình con (TSPACE_AGENT_SLOT, TSPACE_BOARD…). */
+  env?: Record<string, string>
 }
 
 export interface PtyDataEvent {
@@ -64,6 +68,8 @@ export interface AgentProfile {
   /** Lệnh gõ vào PTY ngay sau khi spawn. Rỗng = shell trần. */
   command: string
   builtin: boolean
+  /** Biến môi trường riêng của agent, trộn vào env của PTY. */
+  env?: Record<string, string>
 }
 
 /* ---------- File system ---------- */
@@ -101,6 +107,25 @@ export interface GitStatusInfo {
   behind: number
 }
 
+export interface BranchListInfo {
+  current: string | null
+  all: string[]
+}
+
+export interface CommitResult {
+  /** false khi repo sạch — không có gì để commit, không phải lỗi. */
+  committed: boolean
+  hash: string | null
+  files: number
+}
+
+export interface CreateWorktreeOptions {
+  path: string
+  branch: string
+  /** Branch gốc để tách; chỉ dùng khi `branch` chưa tồn tại. */
+  base?: string
+}
+
 export interface WorkspaceInfo {
   /** Thư mục người dùng đã mở. */
   root: string
@@ -123,9 +148,63 @@ export interface SavedWorkspace {
   agentId: string | null
 }
 
+/* ---------- Settings ---------- */
+
+export type CursorStyle = 'block' | 'bar' | 'underline'
+export type Density = 'compact' | 'comfortable'
+
+export interface TerminalSettings {
+  fontFamily: string
+  fontSize: number
+  scrollback: number
+  cursorStyle: CursorStyle
+  cursorBlink: boolean
+}
+
+export interface UiSettings {
+  accent: string
+  density: Density
+}
+
+export interface BehaviorSettings {
+  defaultShell: ShellId
+  defaultAgentId: string
+  confirmClosePane: boolean
+  saveTranscripts: boolean
+  /** Trần dung lượng transcript mỗi pane; vượt thì cắt bỏ phần đầu, giữ đuôi. */
+  transcriptMaxBytes: number
+}
+
+export interface AppSettings {
+  terminal: TerminalSettings
+  ui: UiSettings
+  behavior: BehaviorSettings
+}
+
+export const DEFAULT_SETTINGS: AppSettings = {
+  terminal: {
+    fontFamily: "'Cascadia Mono', Consolas, 'Courier New', monospace",
+    fontSize: 13,
+    scrollback: 5000,
+    cursorStyle: 'bar',
+    cursorBlink: true
+  },
+  ui: {
+    accent: '#3b82f6',
+    density: 'comfortable'
+  },
+  behavior: {
+    defaultShell: 'powershell',
+    defaultAgentId: 'shell',
+    confirmClosePane: true,
+    saveTranscripts: true,
+    transcriptMaxBytes: 1024 * 1024
+  }
+}
+
 /* ---------- Persistence ---------- */
 
-export const STATE_VERSION = 2
+export const STATE_VERSION = 3
 
 export interface PersistedPane {
   /** Giữ nguyên id để khớp với leaf trong cây layout khi khôi phục. */
@@ -133,6 +212,8 @@ export interface PersistedPane {
   shell: ShellId
   cwd: string
   agentId: string | null
+  /** Định danh trên task board (a1, a2…). Agent gọi nhau bằng tên này nên phải bền. */
+  slot?: string | null
 }
 
 export interface PersistedTab {
@@ -153,6 +234,7 @@ export interface PersistedState {
   sidebarVisible: boolean
   sidebarWidth: number
   sharedWorktree: boolean
+  settings: AppSettings
 }
 
 export const DEFAULT_STATE: PersistedState = {
@@ -166,8 +248,13 @@ export const DEFAULT_STATE: PersistedState = {
   agents: [],
   sidebarVisible: true,
   sidebarWidth: 20,
-  sharedWorktree: true
+  sharedWorktree: true,
+  settings: DEFAULT_SETTINGS
 }
+
+/** Biên độ hợp lệ của sidebar, khớp minSize/maxSize của Panel trong Workspace.tsx. */
+export const SIDEBAR_MIN_PCT = 12
+export const SIDEBAR_MAX_PCT = 45
 
 /** Shape của state.json trước version 2 — chỉ dùng cho migrate. */
 export interface LegacyPersistedState {

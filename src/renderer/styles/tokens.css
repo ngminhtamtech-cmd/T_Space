@@ -59,3 +59,18 @@
 
   --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
+
+/*
+ * Mật độ compact (Settings → Giao diện): thu các thanh và khoảng đệm để dành chỗ
+ * cho terminal. Chỉ đè vài token, phần còn lại kế thừa nguyên.
+ */
+:root[data-density='compact'] {
+  --space-3: 10px;
+  --space-4: 12px;
+  --space-5: 16px;
+  --space-6: 18px;
+
+  --h-titlebar: 28px;
+  --h-tabbar: 28px;
+  --h-statusbar: 22px;
+}

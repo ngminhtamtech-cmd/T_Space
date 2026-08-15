@@ -1,0 +1,128 @@
+/* Modal "Commit nhanh & tách worktree" — luồng chính của app. */
+
+.worktree-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(680px, 92vw);
+  max-height: 88vh;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+  overflow: hidden;
+}
+
+.worktree__head {
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.worktree__head h2 {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+
+.worktree__sub {
+  margin: var(--space-1) 0 0;
+  font-size: var(--fs-sm);
+  color: var(--fg-muted);
+}
+
+.worktree__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.worktree__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.worktree__section h3 {
+  margin: 0;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+
+.worktree__grid {
+  display: grid;
+  grid-template-columns: 1fr 180px;
+  gap: var(--space-3);
+}
+
+.worktree__path {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.worktree__path .input {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+
+.worktree__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.worktree__presets .card {
+  width: 84px;
+}
+
+.worktree__agents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.worktree__agent {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.worktree__slot {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+.worktree__error {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: var(--fs-sm);
+  overflow-wrap: anywhere;
+}
+
+.worktree__foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border);
+  background: var(--bg-base);
+}
+
+.worktree__status {
+  margin-right: auto;
+  font-size: var(--fs-sm);
+  color: var(--fg-muted);
+}
