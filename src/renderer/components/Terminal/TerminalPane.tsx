@@ -12,16 +12,21 @@ const RESIZE_DEBOUNCE_MS = 50
 
 interface Props {
   pane: Pane
+  tabId: string
 }
 
-export function TerminalPane({ pane }: Props): React.JSX.Element {
+export function TerminalPane({ pane, tabId }: Props): React.JSX.Element {
   const hostRef = useRef<HTMLDivElement>(null)
   const termRef = useRef<Terminal | null>(null)
   /** Output đến trước khi xterm mount xong sẽ mất nếu không đệm lại. */
   const pendingRef = useRef<string[]>([])
   const ptyIdRef = useRef<string | null>(pane.ptyId)
 
-  const isActive = useStore((s) => s.activePaneId === pane.id)
+  const isActive = useStore(
+    (s) => s.tabs.find((t) => t.id === tabId)?.activePaneId === pane.id
+  )
+  // Tab nền vẫn mount (để không mất output) nên phải kiểm tra cả tab có đang hiện.
+  const isVisible = useStore((s) => s.activeTabId === tabId)
   const setActivePane = useStore((s) => s.setActivePane)
   const updatePane = useStore((s) => s.updatePane)
   const { closePane } = usePaneActions()
@@ -113,15 +118,15 @@ export function TerminalPane({ pane }: Props): React.JSX.Element {
   }, [pane.id, updatePane])
 
   useEffect(() => {
-    if (isActive) termRef.current?.focus()
-  }, [isActive])
+    if (isActive && isVisible) termRef.current?.focus()
+  }, [isActive, isVisible])
 
   return (
     <div
       className={`pane ${isActive ? 'pane--active' : ''}`}
       onMouseDown={() => setActivePane(pane.id)}
     >
-      <PaneHeader pane={pane} onClose={() => closePane(pane.id)} />
+      <PaneHeader pane={pane} tabId={tabId} onClose={() => closePane(tabId, pane.id)} />
       <div className="pane__body" ref={hostRef} />
     </div>
   )

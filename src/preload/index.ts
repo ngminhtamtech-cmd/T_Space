@@ -49,7 +49,8 @@ const api = {
       subscribe<FsChangeEvent>(IPC.fs.changed, handler)
   },
   workspace: {
-    pickFolder: (): Promise<string | null> => ipcRenderer.invoke(IPC.workspace.pickFolder),
+    pickFolder: (title?: string): Promise<string | null> =>
+      ipcRenderer.invoke(IPC.workspace.pickFolder, title),
     open: (root: string): Promise<WorkspaceInfo> => ipcRenderer.invoke(IPC.workspace.open, root)
   },
   git: {
@@ -60,6 +61,14 @@ const api = {
   state: {
     load: (): Promise<PersistedState> => ipcRenderer.invoke(IPC.state.load),
     save: (state: PersistedState): Promise<void> => ipcRenderer.invoke(IPC.state.save, state)
+  },
+  window: {
+    minimize: (): void => ipcRenderer.send(IPC.window.minimize),
+    toggleMaximize: (): void => ipcRenderer.send(IPC.window.toggleMaximize),
+    close: (): void => ipcRenderer.send(IPC.window.close),
+    isMaximized: (): Promise<boolean> => ipcRenderer.invoke(IPC.window.isMaximized),
+    onMaximizeChanged: (handler: (maximized: boolean) => void): (() => void) =>
+      subscribe<boolean>(IPC.window.maximizeChanged, handler)
   }
 }
 

@@ -1,0 +1,452 @@
+/* ---------- Tab bar ---------- */
+
+.tabbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--h-tabbar);
+  flex-shrink: 0;
+  padding: 0 var(--space-2);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.tabbar__tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabbar__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 200px;
+  padding: 4px 6px 4px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--fg-muted);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+
+.tab--on {
+  background: var(--bg-active);
+  border-color: var(--border-strong);
+  color: var(--fg);
+}
+
+.tab__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab__count {
+  font-size: var(--fs-xs);
+  color: var(--fg-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.tab__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--fg-dim);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.tab__close:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.tabbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.tabbar__sep {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+  margin: 0 var(--space-2);
+  flex-shrink: 0;
+}
+
+/* ---------- Sidebar / file tree ---------- */
+
+.sidebar {
+  background: var(--bg-surface);
+  overflow: auto;
+  border-right: 1px solid var(--border);
+}
+
+.sidebar__empty {
+  padding: var(--space-4);
+  color: var(--fg-muted);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: flex-start;
+  font-size: var(--fs-sm);
+}
+
+.file-tree {
+  min-height: 100%;
+  padding-bottom: var(--space-3);
+}
+
+.file-tree__root {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--fg-dim);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-node {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 20px;
+  font-size: var(--fs-sm);
+}
+
+.tree-node:hover {
+  background: var(--bg-hover);
+}
+
+.tree-node--active {
+  background: var(--bg-active);
+}
+
+.tree-node--muted {
+  color: var(--fg-dim);
+  cursor: default;
+  font-style: italic;
+}
+
+.tree-node__chevron {
+  width: 10px;
+  flex-shrink: 0;
+  color: var(--fg-dim);
+  font-size: 10px;
+}
+
+.tree-node__icon {
+  flex-shrink: 0;
+  font-size: var(--fs-xs);
+}
+
+.tree-node__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Lưới pane ---------- */
+
+.pane-stack,
+.pane-stack__item {
+  height: 100%;
+}
+
+.pane-grid {
+  position: relative;
+  height: 100%;
+  background: var(--bg-base);
+  overflow: hidden;
+}
+
+.pane-grid--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-hint {
+  text-align: center;
+  color: var(--fg-muted);
+  font-size: var(--fs-sm);
+  line-height: 1.9;
+}
+
+/* Ô chứa pane: đặt theo % do engine layout tính. Chỉ style đổi khi cây đổi hình —
+   component bên trong không bao giờ remount nên xterm sống nguyên. */
+.pane-slot {
+  position: absolute;
+  padding: 2px;
+}
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.pane--active {
+  border-color: var(--accent);
+}
+
+.pane__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 3px 4px 3px var(--space-2);
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-xs);
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+
+.pane__index {
+  background: var(--bg-active);
+  border-radius: 3px;
+  padding: 0 5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-dim);
+}
+
+.pane--active .pane__index {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.pane__shell {
+  color: var(--fg);
+}
+
+.pane__cwd {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  font-family: var(--font-mono);
+}
+
+.pane__badge {
+  color: var(--danger);
+}
+
+.pane__close,
+.editor__close {
+  background: none;
+  border: none;
+  color: var(--fg-dim);
+  cursor: pointer;
+  padding: 0 5px;
+  font-size: var(--fs-sm);
+  line-height: 1;
+}
+
+.pane__close:hover,
+.editor__close:hover {
+  color: var(--danger);
+}
+
+.pane__body {
+  flex: 1;
+  min-height: 0;
+  padding: 2px 0 0 var(--space-1);
+  background: var(--bg-base);
+  user-select: text;
+}
+
+/* Divider kéo được giữa các pane */
+
+.pane-divider {
+  position: absolute;
+  z-index: 5;
+}
+
+.pane-divider::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  transition: background 0.12s;
+}
+
+.pane-divider:hover::after,
+.pane-divider--dragging::after {
+  background: var(--accent);
+}
+
+.pane-divider--row {
+  cursor: col-resize;
+  width: 7px;
+  transform: translateX(-3px);
+}
+
+.pane-divider--row::after {
+  left: 3px;
+  right: 3px;
+}
+
+.pane-divider--column {
+  cursor: row-resize;
+  height: 7px;
+  transform: translateY(-3px);
+}
+
+.pane-divider--column::after {
+  top: 3px;
+  bottom: 3px;
+}
+
+/* ---------- Editor ---------- */
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-surface);
+}
+
+.editor__tab {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 5px 6px 5px var(--space-3);
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.editor__name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 500;
+  font-size: var(--fs-sm);
+}
+
+.editor__dirty {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--warn);
+}
+
+.editor__path {
+  flex: 1;
+  color: var(--fg-dim);
+  font-size: var(--fs-xs);
+  font-family: var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+}
+
+.editor__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  user-select: text;
+}
+
+.editor__body .cm-editor {
+  height: 100%;
+}
+
+/* ---------- Status bar ---------- */
+
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: var(--h-statusbar);
+  padding: 0 var(--space-3);
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-xs);
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+
+.statusbar__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.statusbar__item--path {
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+  font-family: var(--font-mono);
+}
+
+.statusbar__item--muted {
+  color: var(--fg-dim);
+}
+
+.statusbar__dirty {
+  color: var(--warn);
+}
+
+.statusbar__sync {
+  color: var(--accent);
+}
+
+.statusbar__spacer {
+  flex: 1;
+}
+
+.statusbar__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  cursor: pointer;
+}
+
+.statusbar__select {
+  background: var(--bg-raised);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+  font-size: var(--fs-xs);
+  font-family: inherit;
+}

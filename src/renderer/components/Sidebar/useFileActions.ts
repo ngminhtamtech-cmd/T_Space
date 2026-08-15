@@ -92,7 +92,7 @@ export function useFileActions() {
 
   const reveal = useCallback((path: string) => run(() => window.tspace.fs.reveal(path)), [run])
 
-  const openTerminalAt = useCallback((dir: string): void => void newPane(dir), [newPane])
+  const openTerminalAt = useCallback((dir: string): void => void newPane({ cwd: dir }), [newPane])
 
   return {
     openFile,

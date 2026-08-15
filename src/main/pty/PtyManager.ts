@@ -5,7 +5,7 @@ import * as pty from '@lydell/node-pty'
 import type { IPty } from '@lydell/node-pty'
 import type { WebContents } from 'electron'
 import { IPC } from '@shared/ipc'
-import { MAX_PANES, type SpawnOptions } from '@shared/types'
+import { MAX_PTY, type SpawnOptions } from '@shared/types'
 import { resolveShell } from './shells'
 
 /** Gom output rồi flush theo nhịp này. Gửi từng chunk sẽ nghẽn IPC khi lệnh in nhiều. */
@@ -14,11 +14,20 @@ const FLUSH_INTERVAL_MS = 8
 /** Chờ tối đa ngần này cho ConPTY đóng hẳn trước khi ép thoát app. */
 const DISPOSE_TIMEOUT_MS = 2000
 
+/**
+ * Chờ ngần này sau chunk output đầu tiên rồi mới gõ lệnh khởi động của agent.
+ * Gõ ngay lúc spawn thì PowerShell chưa đọc stdin và sẽ nuốt mất lệnh.
+ */
+const INITIAL_COMMAND_DELAY_MS = 250
+
 interface Session {
   id: string
   proc: IPty
   buffer: string
   flushTimer: NodeJS.Timeout | null
+  /** Lệnh agent chờ gõ; null khi đã gõ xong hoặc pane là shell trần. */
+  pendingCommand: string | null
+  commandTimer: NodeJS.Timeout | null
   /** Gọi khi tiến trình thực sự thoát; dùng để chờ dọn sạch lúc quit. */
   onClosed: (() => void) | null
 }
@@ -36,8 +45,8 @@ export class PtyManager {
   }
 
   spawn(options: SpawnOptions): string {
-    if (this.sessions.size >= MAX_PANES) {
-      throw new Error(`Đã đạt giới hạn ${MAX_PANES} terminal. Đóng bớt một pane trước.`)
+    if (this.sessions.size >= MAX_PTY) {
+      throw new Error(`Đã đạt giới hạn ${MAX_PTY} terminal. Đóng bớt một pane trước.`)
     }
 
     const profile = resolveShell(options.shell)
@@ -53,12 +62,21 @@ export class PtyManager {
       useConpty: true
     })
 
-    const session: Session = { id, proc, buffer: '', flushTimer: null, onClosed: null }
+    const session: Session = {
+      id,
+      proc,
+      buffer: '',
+      flushTimer: null,
+      pendingCommand: options.initialCommand?.trim() || null,
+      commandTimer: null,
+      onClosed: null
+    }
     this.sessions.set(id, session)
 
     proc.onData((chunk) => this.enqueue(session, chunk))
     proc.onExit(({ exitCode }) => {
       this.flush(session)
+      this.clearCommandTimer(session)
       this.sessions.delete(id)
       if (this.target && !this.target.isDestroyed()) {
         this.target.send(IPC.pty.exit, { paneId: id, exitCode })
@@ -87,6 +105,7 @@ export class PtyManager {
     const session = this.sessions.get(paneId)
     if (!session) return
     this.clearTimer(session)
+    this.clearCommandTimer(session)
     this.sessions.delete(paneId)
     try {
       session.proc.kill()
@@ -126,6 +145,17 @@ export class PtyManager {
 
   private enqueue(session: Session, chunk: string): void {
     session.buffer += chunk
+
+    // Output đầu tiên nghĩa là shell đã in prompt — giờ mới an toàn để gõ lệnh agent.
+    if (session.pendingCommand && !session.commandTimer) {
+      session.commandTimer = setTimeout(() => {
+        session.commandTimer = null
+        const command = session.pendingCommand
+        session.pendingCommand = null
+        if (command && this.sessions.has(session.id)) session.proc.write(`${command}\r`)
+      }, INITIAL_COMMAND_DELAY_MS)
+    }
+
     if (session.flushTimer) return
     session.flushTimer = setTimeout(() => this.flush(session), FLUSH_INTERVAL_MS)
   }
@@ -145,6 +175,14 @@ export class PtyManager {
       clearTimeout(session.flushTimer)
       session.flushTimer = null
     }
+  }
+
+  private clearCommandTimer(session: Session): void {
+    if (session.commandTimer) {
+      clearTimeout(session.commandTimer)
+      session.commandTimer = null
+    }
+    session.pendingCommand = null
   }
 }
 

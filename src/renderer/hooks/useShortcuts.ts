@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
-import { useStore } from '@renderer/store'
+import { collectLeaves } from '@shared/layout'
+import { getActiveTab, useStore } from '@renderer/store'
 import { usePaneActions } from './usePaneActions'
+import { useTabActions } from './useTabActions'
 
 /**
  * Đăng ký ở capture phase trên window: xterm gắn listener lên textarea của nó và
@@ -8,16 +10,28 @@ import { usePaneActions } from './usePaneActions'
  * Không dùng globalShortcut của Electron — nó chiếm phím toàn hệ thống.
  */
 export function useShortcuts(): void {
-  const { newPane, closeActivePane } = usePaneActions()
+  const { newPane, splitActivePane, closeActivePane } = usePaneActions()
+  const { openBlankTab, nextTab } = useTabActions()
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent): void => {
       if (!e.ctrlKey || e.altKey) return
+      // Launcher không có pane/tab nào để thao tác.
+      if (useStore.getState().view !== 'workspace') return
 
-      // Ctrl+Shift+` — terminal mới
+      // Ctrl+\ — split right; Ctrl+Shift+\ — split down
+      if (e.code === 'Backslash') {
+        e.preventDefault()
+        void splitActivePane(e.shiftKey ? 'column' : 'row')
+        return
+      }
+
+      // Ctrl+Shift+` — pane mới (chia pane đang focus, hoặc pane đầu tiên của tab rỗng)
       if (e.shiftKey && (e.code === 'Backquote' || e.key === '~')) {
         e.preventDefault()
-        void newPane()
+        const tab = getActiveTab()
+        if (tab?.activePaneId) void splitActivePane('row')
+        else void newPane()
         return
       }
 
@@ -28,6 +42,20 @@ export function useShortcuts(): void {
         return
       }
 
+      // Ctrl+T — tab mới
+      if (!e.shiftKey && e.code === 'KeyT') {
+        e.preventDefault()
+        void openBlankTab()
+        return
+      }
+
+      // Ctrl+Tab / Ctrl+Shift+Tab — chuyển tab
+      if (e.code === 'Tab') {
+        e.preventDefault()
+        nextTab(e.shiftKey ? -1 : 1)
+        return
+      }
+
       // Ctrl+B — ẩn/hiện sidebar
       if (!e.shiftKey && e.code === 'KeyB') {
         e.preventDefault()
@@ -35,18 +63,18 @@ export function useShortcuts(): void {
         return
       }
 
-      // Ctrl+1..6 — focus pane theo thứ tự
-      if (!e.shiftKey && /^Digit[1-6]$/.test(e.code)) {
-        const index = Number(e.code.slice(-1)) - 1
-        const pane = useStore.getState().panes[index]
-        if (pane) {
+      // Ctrl+1..8 — focus pane theo thứ tự hiển thị
+      if (!e.shiftKey && /^Digit[1-8]$/.test(e.code)) {
+        const tab = getActiveTab()
+        const paneId = collectLeaves(tab?.layout ?? null)[Number(e.code.slice(-1)) - 1]
+        if (paneId) {
           e.preventDefault()
-          useStore.getState().setActivePane(pane.id)
+          useStore.getState().setActivePane(paneId)
         }
       }
     }
 
     window.addEventListener('keydown', onKeyDown, true)
     return () => window.removeEventListener('keydown', onKeyDown, true)
-  }, [newPane, closeActivePane])
+  }, [newPane, splitActivePane, closeActivePane, openBlankTab, nextTab])
 }

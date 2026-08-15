@@ -1,0 +1,76 @@
+.titlebar {
+  display: flex;
+  align-items: center;
+  height: var(--h-titlebar);
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  padding-left: var(--space-3);
+  -webkit-app-region: drag;
+}
+
+.titlebar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--fg-muted);
+}
+
+.titlebar__mark {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+.titlebar__title {
+  flex: 1;
+  text-align: center;
+  font-size: var(--fs-xs);
+  color: var(--fg-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 var(--space-4);
+}
+
+.titlebar__tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar__controls {
+  display: flex;
+  -webkit-app-region: no-drag;
+  margin-left: var(--space-2);
+}
+
+.win-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: var(--h-titlebar);
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  cursor: pointer;
+  transition:
+    background 0.1s,
+    color 0.1s;
+}
+
+.win-btn:hover {
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+
+.win-btn--close:hover {
+  background: var(--danger);
+  color: #fff;
+}

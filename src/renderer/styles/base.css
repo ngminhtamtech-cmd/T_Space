@@ -1,0 +1,86 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg-base);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: var(--fs-md);
+  overflow: hidden;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.app__body {
+  flex: 1;
+  min-height: 0;
+}
+
+kbd {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--fg-muted);
+}
+
+/* ---------- Split cấp app (react-resizable-panels) ---------- */
+
+.split {
+  width: 100%;
+  height: 100%;
+}
+
+.resize-handle {
+  background: var(--border);
+  transition: background 0.12s;
+}
+
+.resize-handle:hover,
+.resize-handle[data-resize-handle-active] {
+  background: var(--accent);
+}
+
+.resize-handle--h {
+  width: 3px;
+}
+
+.resize-handle--v {
+  height: 3px;
+}
+
+/* ---------- Scrollbars ---------- */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-active);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import { MAX_PANES, type WorktreeInfo } from '@shared/types'
-import { useStore } from '@renderer/store'
+import { MAX_PANES_PER_TAB, type WorktreeInfo } from '@shared/types'
+import { useActiveTab, useStore } from '@renderer/store'
 import { useWorkspaceActions } from '@renderer/hooks/useWorkspaceActions'
 
 export function StatusBar(): React.JSX.Element {
   const workspace = useStore((s) => s.workspace)
   const gitStatus = useStore((s) => s.gitStatus)
-  const panes = useStore((s) => s.panes)
+  const paneCount = useActiveTab()?.panes.length ?? 0
   const sharedWorktree = useStore((s) => s.sharedWorktree)
   const setSharedWorktree = useStore((s) => s.setSharedWorktree)
 
@@ -86,8 +86,8 @@ export function StatusBar(): React.JSX.Element {
       )}
 
       <span className="statusbar__spacer" />
-      <span className="statusbar__item" title="Số pane đang mở">
-        {panes.length}/{MAX_PANES} pane
+      <span className="statusbar__item" title="Số pane trong tab đang mở">
+        {paneCount}/{MAX_PANES_PER_TAB} pane
       </span>
     </div>
   )

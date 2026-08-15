@@ -33,5 +33,14 @@ export const IPC = {
   state: {
     load: 'state:load',
     save: 'state:save'
+  },
+  window: {
+    minimize: 'window:minimize',
+    /** Toggle maximize/restore. */
+    toggleMaximize: 'window:toggleMaximize',
+    close: 'window:close',
+    isMaximized: 'window:isMaximized',
+    /** main → renderer */
+    maximizeChanged: 'window:maximizeChanged'
   }
 } as const

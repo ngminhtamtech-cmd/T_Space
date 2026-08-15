@@ -11,7 +11,10 @@ function createWindow(): BrowserWindow {
     minWidth: 900,
     minHeight: 600,
     show: false,
-    backgroundColor: '#1e1e1e',
+    // Title bar tự vẽ trong renderer (TitleBar.tsx). Vẫn resize được từ viền —
+    // Chromium tự xử lý hit-test cho cửa sổ frameless trên Windows.
+    frame: false,
+    backgroundColor: '#0f1115',
     title: 'T_Space',
     autoHideMenuBar: true,
     webPreferences: {

@@ -1,0 +1,61 @@
+/* Nguồn sự thật của bảng màu. Giữ đồng bộ với src/renderer/theme/palette.ts
+   (xterm và CodeMirror không đọc được CSS custom property). */
+
+:root {
+  /* Nền: xám đen hơi ngả xanh, đi từ sâu nhất ra ngoài */
+  --bg-base: #0f1115;
+  --bg-surface: #14171c;
+  --bg-raised: #1a1e24;
+  --bg-hover: #21262e;
+  --bg-active: #262c35;
+
+  /* Viền mảnh */
+  --border: #262a31;
+  --border-strong: #333944;
+
+  /* Chữ */
+  --fg: #e6e8eb;
+  --fg-muted: #8b929e;
+  --fg-dim: #5c6470;
+
+  /* Accent */
+  --accent: #3b82f6;
+  --accent-hover: #2f6fdd;
+  --accent-soft: rgba(59, 130, 246, 0.12);
+  --accent-ring: rgba(59, 130, 246, 0.35);
+
+  /* Trạng thái */
+  --danger: #ef4444;
+  --danger-soft: rgba(239, 68, 68, 0.12);
+  --warn: #f59e0b;
+  --ok: #22c55e;
+
+  /* Hình khối */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+
+  /* Chữ — CSP chặn font ngoài nên chỉ dùng font hệ thống */
+  --font-ui: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Cascadia Mono', Consolas, Menlo, monospace;
+
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-md: 13px;
+  --fs-lg: 15px;
+  --fs-xl: 19px;
+
+  /* Chiều cao các thanh cố định */
+  --h-titlebar: 32px;
+  --h-tabbar: 34px;
+  --h-statusbar: 26px;
+
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.45);
+}

@@ -1,4 +1,7 @@
-export const MAX_PANES = 6
+/** Số pane tối đa nhìn thấy cùng lúc trong một tab — chặn ở renderer. */
+export const MAX_PANES_PER_TAB = 8
+/** Trần cứng tổng số PTY sống cùng lúc trên toàn app — chặn ở main process. */
+export const MAX_PTY = 16
 
 export type ShellId = 'powershell' | 'cmd' | 'gitbash'
 
@@ -14,6 +17,8 @@ export interface SpawnOptions {
   cwd: string
   cols: number
   rows: number
+  /** Lệnh gõ vào PTY ngay sau khi spawn. Rỗng/thiếu = shell trần. */
+  initialCommand?: string
 }
 
 export interface PtyDataEvent {
@@ -26,22 +31,42 @@ export interface PtyExitEvent {
   exitCode: number
 }
 
-export type LayoutId = 'single' | 'twoCols' | 'twoRows' | 'threeCols' | 'grid4' | 'grid6'
+/* ---------- Cây layout ---------- */
 
-export interface LayoutInfo {
-  id: LayoutId
-  label: string
-  paneCount: number
+export type SplitDirection = 'row' | 'column'
+
+export type PaneNode =
+  | { kind: 'leaf'; paneId: string }
+  | {
+      kind: 'split'
+      id: string
+      direction: SplitDirection
+      children: PaneNode[]
+      /** Phần trăm, cùng độ dài với children, luôn cộng đủ 100. */
+      sizes: number[]
+    }
+
+export interface LayoutPreset {
+  id: string
+  name: string
+  layout: PaneNode
+  /** cwd theo paneId; thiếu = kế thừa gốc workspace. */
+  cwds: Record<string, string>
+  builtin: boolean
 }
 
-export const LAYOUTS: LayoutInfo[] = [
-  { id: 'single', label: '1 pane', paneCount: 1 },
-  { id: 'twoCols', label: '2 cột', paneCount: 2 },
-  { id: 'twoRows', label: '2 hàng', paneCount: 2 },
-  { id: 'threeCols', label: '3 cột', paneCount: 3 },
-  { id: 'grid4', label: '2 × 2', paneCount: 4 },
-  { id: 'grid6', label: '3 × 2', paneCount: 6 }
-]
+/* ---------- Agent ---------- */
+
+export interface AgentProfile {
+  id: string
+  label: string
+  shell: ShellId
+  /** Lệnh gõ vào PTY ngay sau khi spawn. Rỗng = shell trần. */
+  command: string
+  builtin: boolean
+}
+
+/* ---------- File system ---------- */
 
 export interface DirEntry {
   name: string
@@ -58,6 +83,8 @@ export interface FsChangeEvent {
   /** Thư mục chứa mục bị thay đổi — renderer chỉ refresh đúng nhánh này. */
   dir: string
 }
+
+/* ---------- Git / workspace ---------- */
 
 export interface WorktreeInfo {
   path: string
@@ -81,25 +108,73 @@ export interface WorkspaceInfo {
   gitRoot: string | null
 }
 
+export interface RecentWorkspace {
+  path: string
+  name: string
+  lastOpenedAt: number
+}
+
+/** Cấu hình đã đặt tên: thư mục + layout + agent mặc định. */
+export interface SavedWorkspace {
+  id: string
+  name: string
+  path: string
+  presetId: string | null
+  agentId: string | null
+}
+
+/* ---------- Persistence ---------- */
+
+export const STATE_VERSION = 2
+
 export interface PersistedPane {
+  /** Giữ nguyên id để khớp với leaf trong cây layout khi khôi phục. */
+  paneId: string
   shell: ShellId
   cwd: string
+  agentId: string | null
+}
+
+export interface PersistedTab {
+  name: string
+  layout: PaneNode | null
+  panes: PersistedPane[]
 }
 
 export interface PersistedState {
+  version: number
   workspaceRoot: string | null
-  layout: LayoutId
-  panes: PersistedPane[]
+  recentWorkspaces: RecentWorkspace[]
+  savedWorkspaces: SavedWorkspace[]
+  tabs: PersistedTab[]
+  activeTabIndex: number
+  layoutPresets: LayoutPreset[]
+  agents: AgentProfile[]
   sidebarVisible: boolean
   sidebarWidth: number
   sharedWorktree: boolean
 }
 
 export const DEFAULT_STATE: PersistedState = {
+  version: STATE_VERSION,
   workspaceRoot: null,
-  layout: 'single',
-  panes: [],
+  recentWorkspaces: [],
+  savedWorkspaces: [],
+  tabs: [],
+  activeTabIndex: 0,
+  layoutPresets: [],
+  agents: [],
   sidebarVisible: true,
   sidebarWidth: 20,
   sharedWorktree: true
+}
+
+/** Shape của state.json trước version 2 — chỉ dùng cho migrate. */
+export interface LegacyPersistedState {
+  workspaceRoot?: string | null
+  layout?: string
+  panes?: { shell: ShellId; cwd: string }[]
+  sidebarVisible?: boolean
+  sidebarWidth?: number
+  sharedWorktree?: boolean
 }

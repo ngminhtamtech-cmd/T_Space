@@ -1,0 +1,262 @@
+.launcher {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  background: var(--bg-base);
+}
+
+/* ---------- Cột 1: rail ---------- */
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  width: 48px;
+  flex-shrink: 0;
+  padding: var(--space-3) 0;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border);
+}
+
+.rail__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--fg-dim);
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.rail__btn:hover {
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+
+.rail__btn--on {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.rail__spacer {
+  flex: 1;
+}
+
+/* ---------- Cột 2: danh sách workspace ---------- */
+
+.wslist {
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border);
+}
+
+.wslist__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.wslist__title {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+
+.wslist__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wslist__empty {
+  padding: var(--space-5) var(--space-4);
+  color: var(--fg-dim);
+  font-size: var(--fs-sm);
+  text-align: center;
+  line-height: 1.7;
+}
+
+.ws-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--fg);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+
+.ws-item:hover {
+  background: var(--bg-hover);
+}
+
+.ws-item--on {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.ws-item__text {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ws-item__name {
+  font-size: var(--fs-md);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ws-item__path {
+  font-size: var(--fs-xs);
+  font-family: var(--font-mono);
+  color: var(--fg-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+}
+
+.ws-item__drop {
+  flex-shrink: 0;
+  color: var(--fg-dim);
+  border: none;
+  background: transparent;
+  border-radius: 3px;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+
+.ws-item__drop:hover {
+  background: var(--bg-active);
+  color: var(--fg);
+}
+
+.wslist__foot {
+  padding: var(--space-3);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* ---------- Cột 3: cấu hình ---------- */
+
+.config {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.config__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.config__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.config__hint {
+  font-size: var(--fs-xs);
+  color: var(--fg-dim);
+}
+
+.config__grid {
+  display: grid;
+  /* Chặn bề ngang để card không kéo dài hết màn hình rộng và loãng bố cục. */
+  max-width: 940px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-3);
+}
+
+/* Hình xem trước layout vẽ bằng div, dùng chung engine với pane-grid */
+
+.mini-preview {
+  position: relative;
+  width: 100%;
+  height: 54px;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.mini-preview__cell {
+  position: absolute;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-raised);
+  border-radius: 2px;
+}
+
+.card--on .mini-preview__cell {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.agent-card__cmd {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--fg-dim);
+}
+
+/* ---------- Thanh dưới ---------- */
+
+.launcher-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  height: 46px;
+  flex-shrink: 0;
+  padding: 0 var(--space-4);
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-xs);
+  color: var(--fg-muted);
+}
+
+.launcher-foot__spacer {
+  flex: 1;
+}
+
+.launcher-foot__keys {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--fg-dim);
+}

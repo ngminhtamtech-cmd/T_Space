@@ -11,6 +11,8 @@
     "build": "npm run typecheck && electron-vite build",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "smoke:layout": "node scripts/smoke-layout.mjs",
+    "smoke:pty": "node scripts/smoke-pty.mjs",
     "dist": "npm run build && electron-builder --win --x64"
   },
   "dependencies": {

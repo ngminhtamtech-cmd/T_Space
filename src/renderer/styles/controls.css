@@ -1,0 +1,212 @@
+/* Nút, input, select, card — dùng chung cho cả Launcher lẫn màn làm việc. */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--bg-raised);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 5px 12px;
+  font-size: var(--fs-sm);
+  font-family: inherit;
+  line-height: 18px;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 500;
+  padding: 6px 20px;
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn--danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+.btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--fg-muted);
+}
+
+.btn--ghost:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: transparent;
+  color: var(--fg);
+}
+
+/* Nút chỉ có icon */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--fg-muted);
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.icon-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+
+.icon-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.icon-btn--on {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.input {
+  background: var(--bg-base);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  user-select: text;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-ring);
+}
+
+.select {
+  background: var(--bg-raised);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-size: var(--fs-sm);
+  font-family: inherit;
+}
+
+.select:disabled {
+  opacity: 0.4;
+}
+
+/* Card chọn được (Layout / Agent / Workspace) */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  align-items: flex-start;
+  text-align: left;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  color: var(--fg);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+
+.card:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+}
+
+.card--on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.card__title {
+  font-size: var(--fs-md);
+  font-weight: 500;
+}
+
+.card__sub {
+  color: var(--fg-muted);
+  font-size: var(--fs-xs);
+  font-family: var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* Segmented control */
+
+.segmented {
+  display: flex;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  gap: 2px;
+}
+
+.segmented__item {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  color: var(--fg-muted);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.segmented__item:hover {
+  color: var(--fg);
+}
+
+.segmented__item--on {
+  background: var(--bg-active);
+  color: var(--fg);
+}
+
+/* Nhãn nhóm */
+
+.section-label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
