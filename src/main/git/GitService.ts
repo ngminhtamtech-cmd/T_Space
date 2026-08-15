@@ -22,6 +22,20 @@ export async function findGitRoot(dir: string): Promise<string | null> {
   }
 }
 
+/**
+ * Thư mục `.git` **dùng chung** của repo. Trong worktree phụ, `.git` là một file trỏ
+ * sang `<repo chính>/.git/worktrees/<tên>`, nên nối chuỗi `<root>/.git` là sai.
+ * `info/exclude` nằm ở common dir và áp cho mọi worktree.
+ */
+export async function findGitCommonDir(dir: string): Promise<string | null> {
+  try {
+    const out = await simpleGit(dir).revparse(['--git-common-dir'])
+    return resolve(dir, out.trim())
+  } catch {
+    return null
+  }
+}
+
 export async function getStatus(gitRoot: string): Promise<GitStatusInfo> {
   const git: SimpleGit = simpleGit(gitRoot)
   const status = await git.status()

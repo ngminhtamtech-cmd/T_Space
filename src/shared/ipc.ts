@@ -43,6 +43,7 @@ export const IPC = {
     changed: 'board:changed'
   },
   transcript: {
+    save: 'transcript:save',
     read: 'transcript:read',
     clear: 'transcript:clear',
     clearWorkspace: 'transcript:clearWorkspace'

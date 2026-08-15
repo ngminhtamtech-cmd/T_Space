@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { WebglAddon } from '@xterm/addon-webgl'
@@ -8,8 +8,11 @@ import { usePaneActions } from '@renderer/hooks/usePaneActions'
 import { CollapseIcon } from '@renderer/components/icons'
 import { PaneHeader } from './PaneHeader'
 import { terminalTheme } from './theme'
+import { registerTranscriptSaver, serializeTerminal } from './transcript'
 
 const RESIZE_DEBOUNCE_MS = 50
+/** Ghi lịch sử sau khi output im tiếng ngần này — tránh chạm đĩa giữa lúc lệnh đang in. */
+const TRANSCRIPT_SAVE_MS = 2500
 
 interface Props {
   pane: Pane
@@ -23,9 +26,10 @@ export function TerminalPane({ pane, tabId, maximized }: Props): React.JSX.Eleme
   const fitRef = useRef<FitAddon | null>(null)
   /** Output đến trước khi xterm mount xong sẽ mất nếu không đệm lại. */
   const pendingRef = useRef<string[]>([])
-  /** Cho tới khi transcript phiên trước được ghi xong, output mới vẫn phải chờ. */
-  const replayedRef = useRef(false)
   const ptyIdRef = useRef<string | null>(pane.ptyId)
+  /** Nội dung phiên trước của đúng pane này; null = không có gì để xem. */
+  const [history, setHistory] = useState<string | null>(null)
+  const [historyOpen, setHistoryOpen] = useState(false)
 
   const isActive = useStore(
     (s) => s.tabs.find((t) => t.id === tabId)?.activePaneId === pane.id
@@ -72,24 +76,22 @@ export function TerminalPane({ pane, tabId, maximized }: Props): React.JSX.Eleme
     }
 
     termRef.current = term
+    for (const chunk of pendingRef.current) term.write(chunk)
+    pendingRef.current = []
 
-    // Phát lại phiên trước rồi mới xả output mới, để dòng thời gian không bị đảo.
-    void (async () => {
-      try {
-        const past = await window.tspace.transcript.read(pane.id)
-        if (cancelled) return
-        if (past) {
-          term.write(past)
-          term.write('\r\n\x1b[2m─────────── phiên trước ───────────\x1b[0m\r\n')
-        }
-      } catch {
-        /* không đọc được transcript thì vẫn chạy tiếp bình thường */
-      }
-      if (cancelled) return
-      for (const chunk of pendingRef.current) term.write(chunk)
-      pendingRef.current = []
-      replayedRef.current = true
-    })()
+    /*
+     * Lịch sử phiên trước KHÔNG được ghi vào xterm.
+     *
+     * ConPTY sở hữu viewport và vẽ lại toàn bộ nó — lúc shell khởi động và sau mỗi
+     * lần resize (`ESC[2J`, rồi `ESC[H` + `ESC[K` từng dòng). Bất cứ thứ gì ta ghi
+     * vào đó đều bị xoá ngay sau đấy, nên lịch sử phải nằm ngoài terminal.
+     */
+    void window.tspace.transcript
+      .read(pane.id)
+      .then((past) => {
+        if (!cancelled && past.trim()) setHistory(past.replace(/\s+$/, ''))
+      })
+      .catch(() => undefined)
 
     term.onData((data) => {
       if (ptyIdRef.current) window.tspace.pty.write(ptyIdRef.current, data)
@@ -149,7 +151,7 @@ export function TerminalPane({ pane, tabId, maximized }: Props): React.JSX.Eleme
     const offData = window.tspace.pty.onData(({ paneId, data }) => {
       if (paneId !== ptyIdRef.current) return
       const term = termRef.current
-      if (term && replayedRef.current) term.write(data)
+      if (term) term.write(data)
       else pendingRef.current.push(data)
     })
 
@@ -169,6 +171,35 @@ export function TerminalPane({ pane, tabId, maximized }: Props): React.JSX.Eleme
     if (isActive && isVisible) termRef.current?.focus()
   }, [isActive, isVisible])
 
+  // Lưu lại nội dung đã render, chống rung theo nhịp output.
+  useEffect(() => {
+    let timer: number | undefined
+
+    const save = async (): Promise<void> => {
+      const term = termRef.current
+      if (!term || !useStore.getState().settings.behavior.saveTranscripts) return
+      await window.tspace.transcript.save(pane.id, serializeTerminal(term))
+    }
+
+    const schedule = (): void => {
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => void save(), TRANSCRIPT_SAVE_MS)
+    }
+
+    const off = window.tspace.pty.onData(({ paneId }) => {
+      if (paneId === ptyIdRef.current) schedule()
+    })
+    // Cửa sổ đóng thì component không unmount, nên phải có đường ghi riêng lúc thoát.
+    const unregister = registerTranscriptSaver(pane.id, save)
+
+    return () => {
+      window.clearTimeout(timer)
+      off()
+      unregister()
+      void save()
+    }
+  }, [pane.id])
+
   const toggleMaximize = (): void => toggleMaximizePane(tabId, pane.id)
 
   return (
@@ -183,6 +214,34 @@ export function TerminalPane({ pane, tabId, maximized }: Props): React.JSX.Eleme
         onClose={() => void closePane(tabId, pane.id)}
         onToggleMaximize={toggleMaximize}
       />
+
+      {history && (
+        <div className={`pane__history ${historyOpen ? 'pane__history--open' : ''}`}>
+          <button
+            className="pane__history-bar"
+            onClick={() => setHistoryOpen((open) => !open)}
+            title="Nội dung pane này ở phiên làm việc trước"
+          >
+            <span className="pane__history-caret">{historyOpen ? '▾' : '▸'}</span>
+            Phiên trước · {history.split('\n').length} dòng
+            <span
+              className="pane__history-drop"
+              role="button"
+              tabIndex={0}
+              title="Xoá lịch sử của pane này"
+              onClick={(e) => {
+                e.stopPropagation()
+                setHistory(null)
+                void window.tspace.transcript.clear(pane.id)
+              }}
+            >
+              Xoá
+            </span>
+          </button>
+          {historyOpen && <pre className="pane__history-text">{history}</pre>}
+        </div>
+      )}
+
       <div className="pane__body" ref={hostRef} />
 
       {maximized && (

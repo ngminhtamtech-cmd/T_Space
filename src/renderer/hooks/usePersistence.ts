@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useStore, type Tab } from '@renderer/store'
 import { newId } from '@renderer/utils/id'
+import { flushAllTranscripts } from '@renderer/components/Terminal/transcript'
 import { usePaneActions } from './usePaneActions'
 import { useWorkspaceActions } from './useWorkspaceActions'
 
@@ -82,12 +83,20 @@ export function usePersistence(): void {
     // chạm đĩa lúc người dùng đóng cửa sổ. Main chờ tín hiệu này trước khi thoát.
     const offFlush = window.tspace.app.onFlushState(() => {
       window.clearTimeout(timer)
-      void persist().finally(() => window.tspace.app.stateFlushed())
+      // Lịch sử terminal cũng chỉ ghi theo nhịp chống rung, phải ép ghi nốt ở đây.
+      void Promise.all([persist(), flushAllTranscripts()]).finally(() =>
+        window.tspace.app.stateFlushed()
+      )
     })
 
+    // Đường thoát thường gặp nhất: người dùng bấm X. Cửa sổ bị huỷ trước khi
+    // `before-quit` chạy nên handshake app:flushState không kịp trả lời — pagehide
+    // mới là chỗ chắc chắn còn sống. invoke gửi message đi ngay, main vẫn xử lý
+    // xong dù renderer đã chết sau đó.
     const onPageHide = (): void => {
       window.clearTimeout(timer)
       void persist()
+      void flushAllTranscripts()
     }
     window.addEventListener('pagehide', onPageHide)
 

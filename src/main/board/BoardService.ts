@@ -4,6 +4,7 @@ import chokidar, { type FSWatcher } from 'chokidar'
 import type { WebContents } from 'electron'
 import { IPC } from '@shared/ipc'
 import { BOARD_DIR, BOARD_FILE, emptyBoard, type Board } from '@shared/board'
+import { findGitCommonDir } from '../git/GitService'
 import { BOARD_HELPER_PS1, boardAgentsDoc, ROOT_AGENTS_BLOCK } from './templates'
 
 const WATCH_DEBOUNCE_MS = 150
@@ -94,15 +95,19 @@ class BoardService {
 
   /** `.tspace/` là chuyện riêng của máy này — dùng info/exclude, không đụng .gitignore của repo. */
   private async excludeFromGit(root: string): Promise<void> {
-    const excludePath = join(root, '.git', 'info', 'exclude')
+    // Phải hỏi git: trong worktree phụ, `<root>/.git` là một file trỏ đi nơi khác.
+    const commonDir = await findGitCommonDir(root)
+    if (!commonDir) return
+
+    const excludePath = join(commonDir, 'info', 'exclude')
     try {
+      await mkdir(dirname(excludePath), { recursive: true })
       const current = await readFile(excludePath, 'utf8').catch(() => '')
       if (current.split(/\r?\n/).some((line) => line.trim() === `${BOARD_DIR}/`)) return
       const prefix = current.length === 0 || current.endsWith('\n') ? '' : '\n'
       await writeFile(excludePath, `${current}${prefix}${BOARD_DIR}/\n`, 'utf8')
     } catch {
-      // Worktree phụ có .git là file chứ không phải thư mục, hoặc không ghi được —
-      // bỏ qua, board vẫn chạy được, chỉ là nó hiện ra trong git status.
+      // Không ghi được thì board vẫn chạy, chỉ là .tspace/ hiện ra trong git status.
     }
   }
 

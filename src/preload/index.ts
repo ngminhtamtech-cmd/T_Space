@@ -81,6 +81,8 @@ const api = {
       subscribe<Board | null>(IPC.board.changed, handler)
   },
   transcript: {
+    save: (paneId: string, text: string): Promise<void> =>
+      ipcRenderer.invoke(IPC.transcript.save, paneId, text),
     read: (paneId: string): Promise<string> => ipcRenderer.invoke(IPC.transcript.read, paneId),
     clear: (paneId: string): Promise<void> => ipcRenderer.invoke(IPC.transcript.clear, paneId),
     clearWorkspace: (): Promise<void> => ipcRenderer.invoke(IPC.transcript.clearWorkspace)

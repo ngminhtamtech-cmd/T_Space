@@ -96,6 +96,9 @@ export function registerHandlers(window: BrowserWindow): void {
   handle(IPC.board.read, (_e, root: string) => boardService.read(root))
   handle(IPC.board.write, (_e, root: string, board: Board) => boardService.write(root, board))
 
+  handle(IPC.transcript.save, (_e, paneId: string, text: string) =>
+    transcriptStore.save(paneId, text)
+  )
   handle(IPC.transcript.read, (_e, paneId: string) => transcriptStore.read(paneId))
   handle(IPC.transcript.clear, (_e, paneId: string) => transcriptStore.clear(paneId))
   handle(IPC.transcript.clearWorkspace, () => transcriptStore.clearWorkspace())
