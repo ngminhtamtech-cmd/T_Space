@@ -29,6 +29,8 @@ interface Session {
   flushTimer: NodeJS.Timeout | null
   /** Lệnh agent chờ gõ; null khi đã gõ xong hoặc pane là shell trần. */
   pendingCommand: string | null
+  /** Có gõ Enter thay người dùng không. */
+  submitCommand: boolean
   commandTimer: NodeJS.Timeout | null
   /** Gọi khi tiến trình thực sự thoát; dùng để chờ dọn sạch lúc quit. */
   onClosed: (() => void) | null
@@ -75,6 +77,7 @@ export class PtyManager {
       buffer: '',
       flushTimer: null,
       pendingCommand: options.initialCommand?.trim() || null,
+      submitCommand: options.submitInitialCommand === true,
       commandTimer: null,
       onClosed: null
     }
@@ -159,7 +162,10 @@ export class PtyManager {
         session.commandTimer = null
         const command = session.pendingCommand
         session.pendingCommand = null
-        if (command && this.sessions.has(session.id)) session.proc.write(`${command}\r`)
+        if (!command || !this.sessions.has(session.id)) return
+        // Không tự Enter: chỉ điền lệnh ra prompt để người dùng tự chạy. Agent CLI
+        // hay hỏi lại ngay lúc mở nên chạy thay người dùng là cướp quyền quyết định.
+        session.proc.write(session.submitCommand ? `${command}\r` : command)
       }, INITIAL_COMMAND_DELAY_MS)
     }
 

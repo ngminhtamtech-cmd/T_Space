@@ -81,7 +81,8 @@ export function AgentTable(): React.JSX.Element {
                     onChange={(e) => patch(agent.id, { command: e.target.value })}
                   />
                   <span className="settings__hint">
-                    Gõ vào PTY ngay sau khi pane mở, ví dụ <code>opencode</code>.
+                    Điền sẵn ra prompt khi pane mở, ví dụ <code>opencode2</code>. Mặc định không tự
+                    chạy — bật ở mục Hành vi nếu muốn.
                   </span>
                 </label>
 

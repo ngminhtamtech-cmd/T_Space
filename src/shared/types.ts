@@ -21,6 +21,11 @@ export interface SpawnOptions {
   rows: number
   /** Lệnh gõ vào PTY ngay sau khi spawn. Rỗng/thiếu = shell trần. */
   initialCommand?: string
+  /**
+   * Có gõ Enter sau lệnh khởi động không. Mặc định **không**: lệnh chỉ được điền
+   * sẵn ra prompt để người dùng tự xem lại rồi bấm Enter.
+   */
+  submitInitialCommand?: boolean
   /** Biến môi trường thêm vào cho tiến trình con (TSPACE_AGENT_SLOT, TSPACE_BOARD…). */
   env?: Record<string, string>
 }
@@ -65,7 +70,7 @@ export interface AgentProfile {
   id: string
   label: string
   shell: ShellId
-  /** Lệnh gõ vào PTY ngay sau khi spawn. Rỗng = shell trần. */
+  /** Lệnh điền sẵn ra prompt khi pane mở. Rỗng = shell trần. */
   command: string
   builtin: boolean
   /** Biến môi trường riêng của agent, trộn vào env của PTY. */
@@ -169,6 +174,8 @@ export interface UiSettings {
 export interface BehaviorSettings {
   defaultShell: ShellId
   defaultAgentId: string
+  /** Bật: tự Enter lệnh agent. Tắt (mặc định): chỉ điền sẵn, người dùng tự chạy. */
+  autoRunAgentCommand: boolean
   confirmClosePane: boolean
   saveTranscripts: boolean
   /** Trần dung lượng transcript mỗi pane; vượt thì cắt bỏ phần đầu, giữ đuôi. */
@@ -196,6 +203,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   behavior: {
     defaultShell: 'powershell',
     defaultAgentId: 'shell',
+    autoRunAgentCommand: false,
     confirmClosePane: true,
     saveTranscripts: true,
     transcriptMaxBytes: 1024 * 1024

@@ -186,6 +186,15 @@ export function SettingsModal(): React.JSX.Element {
               </Field>
 
               <Check
+                label="Tự chạy lệnh agent khi mở pane"
+                hint="Tắt (mặc định): lệnh chỉ được điền sẵn ra prompt, bạn tự bấm Enter."
+                checked={settings.behavior.autoRunAgentCommand}
+                onChange={(autoRunAgentCommand) =>
+                  setSettings({ behavior: { autoRunAgentCommand } })
+                }
+              />
+
+              <Check
                 label="Hỏi trước khi đóng pane đang chạy"
                 checked={settings.behavior.confirmClosePane}
                 onChange={(confirmClosePane) => setSettings({ behavior: { confirmClosePane } })}

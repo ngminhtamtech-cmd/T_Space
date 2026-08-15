@@ -252,6 +252,7 @@ async function spawnPane(
       cols: INITIAL_COLS,
       rows: INITIAL_ROWS,
       initialCommand: agent.command || undefined,
+      submitInitialCommand: useStore.getState().settings.behavior.autoRunAgentCommand,
       env: { ...agent.env, ...boardEnv(cwd, slot) }
     })
     return { id: paneId, ptyId, shell: agent.shell, cwd, agentId: agent.id, slot, exited: false }
